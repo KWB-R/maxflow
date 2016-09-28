@@ -163,11 +163,27 @@ stress_period_data = {0: pd.DataFrame.as_matrix(wel_sp1),
 wel = flopy.modflow.ModflowWel(mf, stress_period_data=stress_period_data)
 
 # Output control
-stress_period_data = {(2, 9): ['save head',
-                              'save drawdown',
-                               'save budget',
-                               'print head',
-                               'print budget']}
+
+output = ['save head', 
+          'save budget']
+
+stress_period_data = {(0, 0): output,
+                      (1, 0): [],
+                      (1, 9): output,
+                      (2, 0): [],
+                      (2, 9): output,
+                      (3, 0): [],
+                      (3, 9): output,
+                      (4, 0): [],
+                      (4, 9): output,
+                      (5, 0): [],
+                      (5, 9): output,
+                      (6, 0): [],
+                      (7, 9): output,
+                      (8, 0): [],
+                      (8, 9): output,
+                      (9, 0): []
+                               }
 
 #stress_period_data = {(nper-1,  nstp[0]): ['save head',
 #                                           'save budget'],
