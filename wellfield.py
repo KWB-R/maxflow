@@ -85,10 +85,10 @@ for il in range(nlay):
 #        bound_sp1.append([il, ir, ncol - 1, stageright, condright])
 print('Adding ', len(bound_sp1), 'GHBs for stress period 1.')
 
-stress_period_data = {0: bound_sp1}
+boundary_data = {0: bound_sp1}
 
 # Create the flopy ghb object
-#ghb = flopy.modflow.ModflowGhb(mf, stress_period_data=stress_period_data)
+#ghb = flopy.modflow.ModflowGhb(mf, stress_period_data = boundary_data)
 
 # Create the well package
 # Remember to use zero-based layer, row, column indices!
@@ -131,7 +131,7 @@ def create_wellfield(layers = [1],
 #pd.DataFrame.as_matrix(wellfield_df)                  
 
 wel_sp1 = create_wellfield()
-wel_sp3 = create_wellfield(spacing_x =400, spacing_y = 400, pumping_rate = -2000)
+wel_sp3 = create_wellfield(spacing_x = 400, spacing_y = 400, pumping_rate = -2000)
 wel_sp4 = create_wellfield(spacing_x =350, spacing_y = 350, pumping_rate = -1300)
 wel_sp5 = create_wellfield(spacing_x =300, spacing_y = 300, pumping_rate = -700)
 wel_sp6 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -400)
@@ -150,7 +150,7 @@ wel_sp9 = create_wellfield(spacing_x =100, spacing_y = 100, pumping_rate = -70)
 #
 #wellfields  = pd.concat(wfs)
 
-stress_period_data = {0: pd.DataFrame.as_matrix(wel_sp1), 
+pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1), 
                       1: pd.DataFrame.as_matrix(wel_sp1), 
                       2: pd.DataFrame.as_matrix(wel_sp3),
                       3: pd.DataFrame.as_matrix(wel_sp4),
@@ -160,28 +160,28 @@ stress_period_data = {0: pd.DataFrame.as_matrix(wel_sp1),
                       7: pd.DataFrame.as_matrix(wel_sp8),
                       8: pd.DataFrame.as_matrix(wel_sp9)}
                       
-wel = flopy.modflow.ModflowWel(mf, stress_period_data=stress_period_data)
+wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
 # Output control
 
-output = ['save head', 
-          'save budget']
+output_features = ['save head', 
+                   'save budget']
 
-stress_period_data = {(0, 0): output,
+output_steps       = {(0, 0): output_features,
                       (1, 0): [],
-                      (1, 9): output,
+                      (1, 9): output_features,
                       (2, 0): [],
-                      (2, 9): output,
+                      (2, 9): output_features,
                       (3, 0): [],
-                      (3, 9): output,
+                      (3, 9): output_features,
                       (4, 0): [],
-                      (4, 9): output,
+                      (4, 9): output_features,
                       (5, 0): [],
-                      (5, 9): output,
+                      (5, 9): output_features,
                       (6, 0): [],
-                      (7, 9): output,
+                      (7, 9): output_features,
                       (8, 0): [],
-                      (8, 9): output,
+                      (8, 9): output_features,
                       (9, 0): []
                                }
 
@@ -191,7 +191,7 @@ stress_period_data = {(0, 0): output,
 
 
 oc = flopy.modflow.ModflowOc(mf, 
-                            stress_period_data=stress_period_data,
+                            stress_period_data = output_steps,
                              compact=True)
 
 # Write the model input files
@@ -224,14 +224,28 @@ print('Levels: ', levels)
 print('Extent: ', extent)
 
 # Well point
-wpt = (wel_sp3.iloc[0,1]*delr, wel_sp3.iloc[0,2]*delc)
-wpt = (3000., 2500.)
 
+def getStressPeriod(time, 
+                    stress_period_ende = perlen):
+    
+    cum_perende = np.cumsum(stress_period_ende)
+    
+    stress_period = sum(time > cum_perende)
+   
+    return(stress_period )
+    
 
 # Make the plots
 for iplot, time in enumerate(times):
     print('*****Processing time: ', time)
+    
+    ### Get head data
     head = headobj.get_data(totim=time)
+    
+    ### Get pumping wells 
+    str_per = getStressPeriod(time)
+    pumping_wells = pumping_data[str_per]
+    
     #Print statistics
     print('Head statistics')
     print('  min: ', head.min())
@@ -245,7 +259,7 @@ for iplot, time in enumerate(times):
     #Create the plot
     #plt.subplot(1, len(mytimes), iplot + 1, aspect='equal')
     plt.subplot(1, 1, 1, aspect='equal')
-    plt.title('time step ' + str(iplot + 1))
+    plt.title('total time: ' + str(time) + ' days\n(Stress period: ' + str(str_per) + ")")
     modelmap = flopy.plot.ModelMap(model=mf, layer=1)
     qm = modelmap.plot_ibound()
     lc = modelmap.plot_grid()
@@ -256,10 +270,10 @@ for iplot, time in enumerate(times):
     mfc = 'None'
     if (iplot+1) == len(times):
         mfc='black'
-    plt.plot(wpt[0], wpt[1], lw=0, marker='o', markersize=8, 
+    plt.plot(pumping_wells[:,2]*delc, pumping_wells[:,1]*delr, lw=0, marker='o', markersize=8, 
              markeredgewidth=0.5,
              markeredgecolor='black', markerfacecolor=mfc, zorder=9)
-    plt.text(wpt[0]+25, wpt[1]-25, 'well', size=12, zorder=12)
+    #plt.text(wpt[0]+25, wpt[1]-25, 'well', size=12, zorder=12)
     plt.show()
 
 plt.show()
@@ -284,22 +298,37 @@ for il in range(nlay):
     plt.show()
 
 
-#wel_sp3[[1]]
 # Plot the head versus time
 
-idx = (1, 50, 60)
+### Import measured observation point
+
+obs_measured  = np.loadtxt('obs_head_time.csv', 
+                           delimiter=",",
+                           skiprows = 1)
+
+### User defined observation point in format: layer, x, y-coordinate (absolute)
+obsPoint = [1, 3150, 2500]
+
+#### Convert observation poitn to layer, column, row format
+idx = (obsPoint[0], 
+       round(obsPoint[2]/delr,0), 
+       round(obsPoint[1]/delc,0))
 ts = headobj.get_ts(idx)
 plt.subplot(1, 1, 1)
-ttl = 'Head at cell ({0},{1},{2})'.format(idx[0] + 1, idx[1] + 1, idx[2] + 1)
+ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint[0] + 1, obsPoint[1], obsPoint[2])
 plt.title(ttl)
 plt.xlabel('time')
 plt.ylabel('head')
 plt.plot(ts[:, 0], ts[:, 1])
+plt.plot(obs_measured[:, 0], obs_measured[:, 1], color="red")
 plt.show()
 
 mf_list = flopy.utils.MfListBudget(modelname+".list")
 budget = mf_list.get_budget()
-data = mf_list.get_data(kstpkper=(9,2))
-plt.bar(data['index'], data['value'])
-plt.xticks(data['index'], data['name'], rotation=45, size=6)
-plt.show()
+timestep = 9
+for stress_period in np.linspace(2,7,6):
+    data = mf_list.get_data(kstpkper=(timestep,stress_period))
+    plt.title('water budget for ' + str(stress_period + 1) + ' stress period at ' + str(timestep + 1) + ". timestep\n")
+    plt.bar(data['index'], data['value'])
+    plt.xticks(data['index'], data['name'], rotation=45, size=6)
+    plt.show()
