@@ -96,7 +96,7 @@ boundary_data = {0: bound_sp1}
 def create_wellfield(layers = [1],
                      spacing_x = 1000, 
                      spacing_y = 1000, 
-                     extent_x = [3000,3300],
+                     extent_x = [3000,4000],
                      extent_y = [1000,4000],
                      pumping_rate = 0):
 
@@ -131,13 +131,13 @@ def create_wellfield(layers = [1],
 #pd.DataFrame.as_matrix(wellfield_df)                  
 
 wel_sp1 = create_wellfield()
-wel_sp3 = create_wellfield(spacing_x = 400, spacing_y = 1000, pumping_rate = -2000)
-wel_sp4 = create_wellfield(spacing_x =350, spacing_y = 500, pumping_rate = -1300)
-wel_sp5 = create_wellfield(spacing_x =300, spacing_y = 400, pumping_rate = -700)
-wel_sp6 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -600)
-wel_sp7 = create_wellfield(spacing_x =200, spacing_y = 200, pumping_rate = -550)
-wel_sp8 = create_wellfield(spacing_x =150, spacing_y = 150, pumping_rate = -180)
-wel_sp9 = create_wellfield(spacing_x =100, spacing_y = 100, pumping_rate = -80)                                           
+wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 1000, pumping_rate = -2000)
+wel_sp4 = create_wellfield(spacing_x =500, spacing_y = 1000, pumping_rate = -1300)
+wel_sp5 = create_wellfield(spacing_x =500, spacing_y = 500, pumping_rate = -700)
+wel_sp6 = create_wellfield(spacing_x =500, spacing_y = 500, pumping_rate = -550)
+wel_sp7 = create_wellfield(spacing_x =250, spacing_y = 500, pumping_rate = -400)
+wel_sp8 = create_wellfield(spacing_x =250, spacing_y = 300, pumping_rate = -150)
+wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 200, pumping_rate = -100)                                           
 #wel_sp10 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-230)                                            
 #wel_sp11 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-150)
 #wel_sp12 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-70)
@@ -200,7 +200,7 @@ mf.write_input()
 
 ## Export model data as shapefile
 #mf.lpf.hk.export(os.path.join('hk.shp'))
-mf.export(os.path.join('model.shp'))
+#mf.export(os.path.join('model.shp'))
 
 # Run the model
 success, mfoutput = mf.run_model(silent=False, pause=False)
@@ -279,10 +279,10 @@ for iplot, time in enumerate(times):
 plt.show()
 
 
-
-head = headobj.get_data(totim=times[len(times)-1])
+#
+#head = headobj.get_data(totim=times[len(times)-1])
 #levels = np.arange(-50, 10, .5)
-
+#
 #for il in range(nlay):
 #    mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
 #    fig = plt.figure(figsize=(10, 10))
@@ -298,7 +298,7 @@ head = headobj.get_data(totim=times[len(times)-1])
 #    plt.show()
 
 
-# Plot the head versus time
+###Plot the head versus time
 
 ### Import measured observation point
 
@@ -317,10 +317,11 @@ ts = headobj.get_ts(idx)
 plt.subplot(1, 1, 1)
 ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint[0] + 1, obsPoint[1], obsPoint[2])
 plt.title(ttl)
-plt.xlabel('time')
-plt.ylabel('head')
-plt.plot(ts[:, 0], ts[:, 1])
-plt.plot(obs_measured[:, 0], obs_measured[:, 1], color="red")
+plt.xlabel('time in days')
+plt.ylabel('head in m')
+plt.plot(ts[:, 0], ts[:, 1], label='simulated')
+plt.plot(obs_measured[:, 0], obs_measured[:, 1], color="red", label='measured (814193)')
+plt.legend()
 plt.show()
 
 #mf_list = flopy.utils.MfListBudget(modelname+".list")
@@ -331,4 +332,5 @@ plt.show()
 #    plt.title('water budget for ' + str(stress_period + 1) + ' stress period at ' + str(timestep + 1) + ". timestep\n")
 #    plt.bar(data['index'], data['value'])
 #    plt.xticks(data['index'], data['name'], rotation=45, size=6)
+#    plt.ylabel('m³')
 #    plt.show()
