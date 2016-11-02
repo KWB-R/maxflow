@@ -35,14 +35,14 @@ ibound[:, :, -1] = 1
 
 
 #starting heads
-iniHead = 70.
+iniHead = 80.
 strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
 
 # Time step parameters
-perlen = [1, 100, 365, 365, 365, 365, 365, 365, 365] #length of a stress period
-nstp = [1, 10, 10, 10, 10, 10, 10, 10, 10] #number of time steps in a stress period
-steady = [True, False, False, False, False, False, False, False, False] #type of sress period
-nper = 9 #number of stress periods
+perlen = [1, 100, 365, 365, 365, 365, 365, 365, 365, 365] #length of a stress period
+nstp = [1, 10, 10, 10, 10, 10, 10, 10, 10, 10] #number of time steps in a stress period
+steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
+nper = 10 #number of stress periods
 
 # Flopy objects
 modelname = 'wellfield'
@@ -64,6 +64,7 @@ dis = flopy.modflow.ModflowDis(mf, #model discretisation
 bas = flopy.modflow.ModflowBas(mf, 
                                ibound = ibound, #boundary conditions
                                strt = strt #starting heads
+                               #strt = head[1,:,:]
                                )
 lpf = flopy.modflow.ModflowLpf(mf, #layer-property-flow
                                hk = hk, 
@@ -142,13 +143,11 @@ wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -90)
 #wel_sp11 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-150)
 #wel_sp12 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-70)
                                             
-#wfs = [create_wellfield(spacing_x =200, spacing_y = 200, pumping_rate=-50*24), 
-#       create_wellfield(spacing_x =50, spacing_y = 50, 
-#                        extent_x = [1000,1500],
-#                        extent_y = [1000,1500],
-#                        pumping_rate=-50*24)]
-#
-#wellfields  = pd.concat(wfs)
+wfs = wel_sp9.append(create_wellfield(spacing_x =1000, spacing_y = 1000, 
+                        extent_x = [2500,2600],
+                        extent_y = [500,4500],
+                        pumping_rate=-50*24))
+
 
 pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1), 
                       1: pd.DataFrame.as_matrix(wel_sp1), 
@@ -158,7 +157,8 @@ pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1),
                       5: pd.DataFrame.as_matrix(wel_sp6), 
                       6: pd.DataFrame.as_matrix(wel_sp7),
                       7: pd.DataFrame.as_matrix(wel_sp8),
-                      8: pd.DataFrame.as_matrix(wel_sp9)}
+                      8: pd.DataFrame.as_matrix(wel_sp9),
+                      9: pd.DataFrame.as_matrix(wfs)}
                       
 wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
@@ -184,7 +184,9 @@ output_steps       = {(0, 0): output_features,
                       (7, 9): output_features,
                       (8, 0): [],
                       (8, 9): output_features,
-                      (9, 0): []
+                      (9, 0): [],
+                      (9, 9): output_features,
+                      (10, 0): []
                                }
 
 #stress_period_data = {(nper-1,  nstp[0]): ['save head',
@@ -329,10 +331,10 @@ plt.show()
 mf_list = flopy.utils.MfListBudget(modelname+".list")
 budget = mf_list.get_budget()
 timestep = 9
-for stress_period in np.linspace(2,7,6):
+for stress_period in np.linspace(2,8,7):
     data = mf_list.get_data(kstpkper=(timestep,stress_period))
     plt.title('water budget for ' + str(stress_period + 1) + ' stress period at ' + str(timestep + 1) + ". timestep\n")
     plt.bar(data['index'], data['value'])
     plt.xticks(data['index'], data['name'], rotation=45, size=6)
-    plt.ylabel('m³')
+    plt.ylabel('m3')
     plt.show()
