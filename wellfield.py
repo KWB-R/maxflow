@@ -17,11 +17,11 @@ delv = np.array([60, 20], dtype=np.float32)
 nrow = int(Lx / delr)
 ncol = int(Ly / delc)
 botm = np.array([ztop - delv[0], zbot], dtype=np.float32)
-hk = np.array([10e-8*3600*24, 3e-5*3600*24], #horizontal conductivity
+hk = np.array([10e-8*3600*24, 2e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([10e-8*3600*24, 3e-5*3600*24], #vertical conductivity
+vka =  np.array([10e-8*3600*24, 2e-5*3600*24], #vertical conductivity
                 dtype=np.float32)
-sy = np.array([0.023, 0.135], #specific yield
+sy = np.array([0.023, 0.123], #specific yield
               dtype=np.float32)
 ss = np.array([1.e-4, 1.e-4], #specific storage
               dtype=np.float32)
@@ -35,7 +35,7 @@ ibound[:, :, -1] = 1
 
 
 #starting heads
-iniHead = 80.
+iniHead = 70.
 strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
 
 # Time step parameters
@@ -74,7 +74,7 @@ lpf = flopy.modflow.ModflowLpf(mf, #layer-property-flow
 pcg = flopy.modflow.ModflowPcg(mf) #Preconditioned Conjugate-Gradient
 
 # Make list for stress period 1
-stageleft = 80. #head on the left boundary
+stageleft = 70. #head on the left boundary
 # stageright = 80  #head on the right boundary
 bound_sp1 = [] #boundary conditions for stress period 1
 for il in range(nlay):
@@ -96,8 +96,8 @@ boundary_data = {0: bound_sp1}
 def create_wellfield(layers = [1],
                      spacing_x = 1000, 
                      spacing_y = 1000, 
-                     extent_x = [3000,4000],
-                     extent_y = [1000,4000],
+                     extent_x = [4250,4750],
+                     extent_y = [500,4500],
                      pumping_rate = 0):
 
     layers = np.array(layers)
@@ -131,14 +131,14 @@ def create_wellfield(layers = [1],
 #pd.DataFrame.as_matrix(wellfield_df)                  
 
 wel_sp1 = create_wellfield()
-wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 1000, pumping_rate = -2000)
-wel_sp4 = create_wellfield(spacing_x =500, spacing_y = 1000, pumping_rate = -1300)
-wel_sp5 = create_wellfield(spacing_x =500, spacing_y = 500, pumping_rate = -700)
-wel_sp6 = create_wellfield(spacing_x =500, spacing_y = 500, pumping_rate = -550)
-wel_sp7 = create_wellfield(spacing_x =250, spacing_y = 500, pumping_rate = -400)
-wel_sp8 = create_wellfield(spacing_x =250, spacing_y = 300, pumping_rate = -150)
-wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 200, pumping_rate = -100)                                           
-#wel_sp10 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-230)                                            
+wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 2000, pumping_rate = -2000)
+wel_sp4 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1900)
+wel_sp5 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1600)
+wel_sp6 = create_wellfield(spacing_x =1000, spacing_y = 500, pumping_rate = -1200)
+wel_sp7 = create_wellfield(spacing_x =500, spacing_y = 250, pumping_rate = -200)
+wel_sp8 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -105)
+wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -90)                                           
+#wel_sp10 = create_wellfield(spacing_x =250, spacing_y = 250,pumping_rate=-90)                                            
 #wel_sp11 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-150)
 #wel_sp12 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-70)
                                             
@@ -179,6 +179,8 @@ output_steps       = {(0, 0): output_features,
                       (5, 0): [],
                       (5, 9): output_features,
                       (6, 0): [],
+                      (6, 9): output_features,
+                      (7, 0): [],
                       (7, 9): output_features,
                       (8, 0): [],
                       (8, 9): output_features,
@@ -279,23 +281,23 @@ for iplot, time in enumerate(times):
 plt.show()
 
 
-#
-#head = headobj.get_data(totim=times[len(times)-1])
-#levels = np.arange(-50, 10, .5)
-#
-#for il in range(nlay):
-#    mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
-#    fig = plt.figure(figsize=(10, 10))
-#    ax = fig.add_subplot(1, 1, 1, aspect='equal')
-#    title = ax.set_title(mytitle)
-#    modelmap = flopy.plot.ModelMap(model=mf, rotation=0)
-#    quadmesh = modelmap.plot_ibound()
-#    contour_set = modelmap.plot_array(head[il,:,:], 
-#                                  masked_values=[999.], 
-#                                  alpha=0.5)
-#    linecollection = modelmap.plot_grid()
-#    cb = plt.colorbar(contour_set, shrink=0.4)
-#    plt.show()
+
+head = headobj.get_data(totim=times[len(times)-1])
+levels = np.arange(-50, 10, .5)
+
+for il in range(nlay):
+    mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(1, 1, 1, aspect='equal')
+    title = ax.set_title(mytitle)
+    modelmap = flopy.plot.ModelMap(model=mf, rotation=0)
+    quadmesh = modelmap.plot_ibound()
+    contour_set = modelmap.plot_array(head[il,:,:], 
+                                  masked_values=[999.], 
+                                  alpha=0.5)
+    linecollection = modelmap.plot_grid()
+    cb = plt.colorbar(contour_set, shrink=0.4)
+    plt.show()
 
 
 ###Plot the head versus time
@@ -307,9 +309,9 @@ obs_measured  = np.loadtxt('obs_head_time.csv',
                            skiprows = 1)
 
 ### User defined observation point in format: layer, x, y-coordinate (absolute)
-obsPoint = [1, 3150, 2500]
+obsPoint = [1, 4850, 2500]
 
-#### Convert observation poitn to layer, column, row format
+#### Convert observation point to layer, column, row format
 idx = (obsPoint[0], 
        round(obsPoint[2]/delr,0), 
        round(obsPoint[1]/delc,0))
@@ -324,13 +326,13 @@ plt.plot(obs_measured[:, 0], obs_measured[:, 1], color="red", label='measured (8
 plt.legend()
 plt.show()
 
-#mf_list = flopy.utils.MfListBudget(modelname+".list")
-#budget = mf_list.get_budget()
-#timestep = 9
-#for stress_period in np.linspace(2,7,6):
-#    data = mf_list.get_data(kstpkper=(timestep,stress_period))
-#    plt.title('water budget for ' + str(stress_period + 1) + ' stress period at ' + str(timestep + 1) + ". timestep\n")
-#    plt.bar(data['index'], data['value'])
-#    plt.xticks(data['index'], data['name'], rotation=45, size=6)
-#    plt.ylabel('m³')
-#    plt.show()
+mf_list = flopy.utils.MfListBudget(modelname+".list")
+budget = mf_list.get_budget()
+timestep = 9
+for stress_period in np.linspace(2,7,6):
+    data = mf_list.get_data(kstpkper=(timestep,stress_period))
+    plt.title('water budget for ' + str(stress_period + 1) + ' stress period at ' + str(timestep + 1) + ". timestep\n")
+    plt.bar(data['index'], data['value'])
+    plt.xticks(data['index'], data['name'], rotation=45, size=6)
+    plt.ylabel('m³')
+    plt.show()
