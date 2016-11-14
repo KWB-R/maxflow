@@ -2,15 +2,15 @@
 3 -90 2
 well1 1
 none 0 1 0 0
-1 50 50
+2 30 50
 10 0                 ; 2f. hlim QCUT {Qfrcmn Qfrcmx}
 well2 1
 none 0 1 0 0
-1 50 50
+2 50 50
 10 0                 ; 2f. hlim QCUT {Qfrcmn Qfrcmx}
 well3 1
 none 0 1 0 0
-1 50 50
+2 70 50
 10 0                 ; 2f. hlim QCUT {Qfrcmn Qfrcmx}
 3  ;Stress Period 1
 well1 0 
