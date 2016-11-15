@@ -9,23 +9,23 @@ Lx = 5000.
 Ly = 5000.
 ztop = 80.
 zbot = 0.
-nlay = 2
-grid_spacing = 50
+nlay = 1
+grid_spacing = 10
 delr = grid_spacing
 delc = grid_spacing
-delv = np.array([60, 20], dtype=np.float32)
+delv = np.array([ztop-zbot], dtype=np.float32)
 nrow = int(Lx / delr)
 ncol = int(Ly / delc)
-botm = np.array([ztop - delv[0], zbot], dtype=np.float32)
-hk = np.array([10e-8*3600*24, 2e-5*3600*24], #horizontal conductivity
+botm = np.array([zbot], dtype=np.float32)
+hk = np.array([2e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([10e-8*3600*24, 2e-5*3600*24], #vertical conductivity
+vka =  np.array([2e-5*3600*24], #vertical conductivity
                 dtype=np.float32)
-sy = np.array([0.023, 0.123], #specific yield
+sy = np.array([0.123], #specific yield
               dtype=np.float32)
-ss = np.array([1.e-4, 1.e-4], #specific storage
+ss = np.array([1.0e-4], #specific storage
               dtype=np.float32)
-laytyp = np.int_([1, 0]) # 1 - ungespannt, 0 - gespannt
+laytyp = np.int_([0]) # 1 - ungespannt, 0 - gespannt
 
 # Variables for the BAS package
 # Note that changes from the previous tutorial!
@@ -46,8 +46,10 @@ nper = 10 #number of stress periods
 
 # Flopy objects
 modelname = 'wellfield'
-mf = flopy.modflow.Modflow(modelname, 
-                           exe_name='mf2005')
+#mf = flopy.modflow.Modflow(modelname, 
+#                           version = 'mf2k',
+#                           exe_name='mf2k')
+mf = flopy.modflow.Modflow(modelname)
 dis = flopy.modflow.ModflowDis(mf, #model discretisation
                                nlay, 
                                nrow, 
@@ -59,6 +61,7 @@ dis = flopy.modflow.ModflowDis(mf, #model discretisation
                                nper = nper, 
                                perlen = perlen, 
                                nstp = nstp,
+                               tsmult = 1.3, 
                                steady = steady)
                                
 bas = flopy.modflow.ModflowBas(mf, 
@@ -94,7 +97,7 @@ boundary_data = {0: bound_sp1}
 # Create the well package
 # Remember to use zero-based layer, row, column indices!
 
-def create_wellfield(layers = [1],
+def create_wellfield(layers = [0],
                      spacing_x = 1000, 
                      spacing_y = 1000, 
                      extent_x = [4250,4750],
@@ -264,7 +267,7 @@ for iplot, time in enumerate(times):
     #plt.subplot(1, len(mytimes), iplot + 1, aspect='equal')
     plt.subplot(1, 1, 1, aspect='equal')
     plt.title('total time: ' + str(time) + ' days\n(Stress period: ' + str(str_per) + ")")
-    modelmap = flopy.plot.ModelMap(model=mf, layer=1)
+    modelmap = flopy.plot.ModelMap(model=mf, layer=0)
     qm = modelmap.plot_ibound()
     lc = modelmap.plot_grid()
     #qm = modelmap.plot_bc('GHB', alpha=0.5)
@@ -287,7 +290,8 @@ plt.show()
 head = headobj.get_data(totim=times[len(times)-1])
 levels = np.arange(-50, 10, .5)
 
-for il in range(nlay):
+    il = 0
+    time = times[len(times)-1]
     mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(1, 1, 1, aspect='equal')
@@ -311,7 +315,7 @@ obs_measured  = np.loadtxt('obs_head_time.csv',
                            skiprows = 1)
 
 ### User defined observation point in format: layer, x, y-coordinate (absolute)
-obsPoint = [1, 4850, 2500]
+obsPoint = [0, 4850, 2500]
 
 #### Convert observation point to layer, column, row format
 idx = (obsPoint[0], 
