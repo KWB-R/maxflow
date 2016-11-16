@@ -10,7 +10,7 @@ Ly = 5000.
 ztop = 80.
 zbot = 0.
 nlay = 1
-grid_spacing = 10
+grid_spacing = 50
 delr = grid_spacing
 delc = grid_spacing
 delv = np.array([ztop-zbot], dtype=np.float32)
@@ -23,7 +23,7 @@ vka =  np.array([2e-5*3600*24], #vertical conductivity
                 dtype=np.float32)
 sy = np.array([0.123], #specific yield
               dtype=np.float32)
-ss = np.array([1.0e-4], #specific storage
+ss = np.array([1.0e-3], #specific storage
               dtype=np.float32)
 laytyp = np.int_([0]) # 1 - ungespannt, 0 - gespannt
 
@@ -39,8 +39,8 @@ iniHead = 80.
 strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
 
 # Time step parameters
-perlen = [1, 100, 365, 365, 365, 365, 365, 365, 365, 365] #length of a stress period
-nstp = [1, 10, 10, 10, 10, 10, 10, 10, 10, 10] #number of time steps in a stress period
+perlen = [1, 100, 100, 100, 100, 100, 100, 100, 100, 100] #length of a stress period
+nstp = [1, 5760, 5760, 5760, 5760, 5760, 5760, 5760, 5760, 5760] #number of time steps in a stress period
 steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
 nper = 10 #number of stress periods
 
@@ -61,7 +61,7 @@ dis = flopy.modflow.ModflowDis(mf, #model discretisation
                                nper = nper, 
                                perlen = perlen, 
                                nstp = nstp,
-                               tsmult = 1.3, 
+                               tsmult = 1, 
                                steady = steady)
                                
 bas = flopy.modflow.ModflowBas(mf, 
@@ -134,6 +134,8 @@ def create_wellfield(layers = [0],
 #wellfield_df = pd.DataFrame(wellfield,columns=["layer","row","column","pumping_rate"])              
 #pd.DataFrame.as_matrix(wellfield_df)                  
 
+
+## Well package 
 wel_sp1 = create_wellfield()
 wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 2000, pumping_rate = -2000)
 wel_sp4 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1900)
@@ -165,6 +167,40 @@ pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1),
                       
 wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
+### MNW-2 package
+
+node_data  = pd.read_csv('wells_nodes.csv')
+
+node_data = node_data.to_records()
+node_data
+
+
+stress_period_data  = pd.read_csv('wells_times.csv')
+
+pers = stress_period_data.groupby('per')
+stress_period_data = {i: pers.get_group(i).to_records() for i in range(0,10)}
+
+
+mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=56,
+                 node_data=node_data, 
+                 stress_period_data=stress_period_data,
+                 itmp=[56, 56, 56, 56, 56, 56, 56, 56, 56, 56] # reuse second per pumping for last stress period
+                 )
+
+
+mnw2.write_file("wellfield.mnw2")
+
+
+#mnwi = flopy.modflow.mfmnwi.ModflowMnwi(model=mf, 
+#                                        wel1flag=1, 
+#                                        qsumflag=1, 
+#                                        byndflag=1, 
+#                                        mnwobs=1, 
+#                                        wellid_unit_qndflag_qhbflag_concflag=None, 
+#                                        extension='mnwi', 
+#                                        unitnumber=58)
+
+
 # Output control
 
 output_features = ['save head', 
@@ -172,23 +208,23 @@ output_features = ['save head',
 
 output_steps       = {(0, 0): output_features,
                       (1, 0): [],
-                      (1, 9): output_features,
+                      (1, 5759): output_features,
                       (2, 0): [],
-                      (2, 9): output_features,
+                      (2, 5759): output_features,
                       (3, 0): [],
-                      (3, 9): output_features,
+                      (3, 5759): output_features,
                       (4, 0): [],
-                      (4, 9): output_features,
+                      (4, 5759): output_features,
                       (5, 0): [],
-                      (5, 9): output_features,
+                      (5, 5759): output_features,
                       (6, 0): [],
-                      (6, 9): output_features,
+                      (6, 5759): output_features,
                       (7, 0): [],
-                      (7, 9): output_features,
+                      (7, 5759): output_features,
                       (8, 0): [],
-                      (8, 9): output_features,
+                      (8, 5759): output_features,
                       (9, 0): [],
-                      (9, 9): output_features,
+                      (9, 5759): output_features,
                       (10, 0): []
                                }
 
