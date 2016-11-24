@@ -10,7 +10,7 @@ Ly = 5000.
 ztop = 80.
 zbot = 0.
 nlay = 1
-grid_spacing = 50
+grid_spacing = 10
 delr = grid_spacing
 delc = grid_spacing
 delv = np.array([ztop-zbot], dtype=np.float32)
@@ -40,7 +40,7 @@ strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
 
 # Time step parameters
 perlen = [1, 100, 100, 100, 100, 100, 100, 100, 100, 100] #length of a stress period
-nstp = [1, 5760, 5760, 5760, 5760, 5760, 5760, 5760, 5760, 5760] #number of time steps in a stress period
+nstp = [1, 142500, 142500, 142500, 142500, 142500, 142500, 142500, 142500, 142500] #number of time steps in a stress period
 steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
 nper = 10 #number of stress periods
 
@@ -208,23 +208,23 @@ output_features = ['save head',
 
 output_steps       = {(0, 0): output_features,
                       (1, 0): [],
-                      (1, 5759): output_features,
+                      (1, 142499): output_features,
                       (2, 0): [],
-                      (2, 5759): output_features,
+                      (2, 142499): output_features,
                       (3, 0): [],
-                      (3, 5759): output_features,
+                      (3, 142499): output_features,
                       (4, 0): [],
-                      (4, 5759): output_features,
+                      (4, 142499): output_features,
                       (5, 0): [],
-                      (5, 5759): output_features,
+                      (5, 142499): output_features,
                       (6, 0): [],
-                      (6, 5759): output_features,
+                      (6, 142499): output_features,
                       (7, 0): [],
-                      (7, 5759): output_features,
+                      (7, 142499): output_features,
                       (8, 0): [],
-                      (8, 5759): output_features,
+                      (8, 142499): output_features,
                       (9, 0): [],
-                      (9, 5759): output_features,
+                      (9, 142499): output_features,
                       (10, 0): []
                                }
 

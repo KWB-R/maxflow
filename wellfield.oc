@@ -9,39 +9,39 @@ period 1 step 1
 save head
 save budget
 
-period 2 step 5760 
+period 2 step 142500 
 save head
 save budget
 
-period 3 step 5760 
+period 3 step 142500 
 save head
 save budget
 
-period 4 step 5760 
+period 4 step 142500 
 save head
 save budget
 
-period 5 step 5760 
+period 5 step 142500 
 save head
 save budget
 
-period 6 step 5760 
+period 6 step 142500 
 save head
 save budget
 
-period 7 step 5760 
+period 7 step 142500 
 save head
 save budget
 
-period 8 step 5760 
+period 8 step 142500 
 save head
 save budget
 
-period 9 step 5760 
+period 9 step 142500 
 save head
 save budget
 
-period 10 step 5760 
+period 10 step 142500 
 save head
 save budget
 
