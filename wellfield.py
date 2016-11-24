@@ -7,25 +7,25 @@ import pandas as pd
 # Model domain and grid definition
 Lx = 5000.
 Ly = 5000.
-ztop = 80.
+ztop = 20.
 zbot = 0.
-nlay = 2
-grid_spacing = 50
+nlay = 1
+grid_spacing = 10
 delr = grid_spacing
 delc = grid_spacing
-delv = np.array([60, 20], dtype=np.float32)
+delv = np.array([ztop-zbot], dtype=np.float32)
 nrow = int(Lx / delr)
 ncol = int(Ly / delc)
-botm = np.array([ztop - delv[0], zbot], dtype=np.float32)
-hk = np.array([10e-8*3600*24, 2e-5*3600*24], #horizontal conductivity
+botm = np.array([zbot], dtype=np.float32)
+hk = np.array([2e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([10e-8*3600*24, 2e-5*3600*24], #vertical conductivity
+vka =  np.array([2e-5*3600*24], #vertical conductivity
                 dtype=np.float32)
-sy = np.array([0.023, 0.123], #specific yield
+sy = np.array([0.123], #specific yield
               dtype=np.float32)
-ss = np.array([1.e-4, 1.e-4], #specific storage
+ss = np.array([1.0e-3], #specific storage
               dtype=np.float32)
-laytyp = np.int_([1, 0]) # 1 - ungespannt, 0 - gespannt
+laytyp = np.int_([0]) # 1 - ungespannt, 0 - gespannt
 
 # Variables for the BAS package
 # Note that changes from the previous tutorial!
@@ -35,19 +35,21 @@ ibound[:, :, -1] = 1
 
 
 #starting heads
-iniHead = 80.
+iniHead = 40.
 strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
 
 # Time step parameters
-perlen = [1, 100, 365, 365, 365, 365, 365, 365, 365, 365] #length of a stress period
-nstp = [1, 10, 10, 10, 10, 10, 10, 10, 10, 10] #number of time steps in a stress period
+perlen = [1, 122, 122, 122, 122, 122, 122, 122, 122, 122] #length of a stress period
+nstp = [1, 175680, 175680, 175680, 175680, 175680, 175680, 175680, 175680, 175680] #number of time steps in a stress period
 steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
 nper = 10 #number of stress periods
 
 # Flopy objects
 modelname = 'wellfield'
-mf = flopy.modflow.Modflow(modelname, 
-                           exe_name='mf2005')
+#mf = flopy.modflow.Modflow(modelname, 
+#                           version = 'mf2k',
+#                           exe_name='mf2k')
+mf = flopy.modflow.Modflow(modelname)
 dis = flopy.modflow.ModflowDis(mf, #model discretisation
                                nlay, 
                                nrow, 
@@ -59,6 +61,7 @@ dis = flopy.modflow.ModflowDis(mf, #model discretisation
                                nper = nper, 
                                perlen = perlen, 
                                nstp = nstp,
+                               tsmult = 1, 
                                steady = steady)
                                
 bas = flopy.modflow.ModflowBas(mf, 
@@ -94,7 +97,7 @@ boundary_data = {0: bound_sp1}
 # Create the well package
 # Remember to use zero-based layer, row, column indices!
 
-def create_wellfield(layers = [1],
+def create_wellfield(layers = [0],
                      spacing_x = 1000, 
                      spacing_y = 1000, 
                      extent_x = [4250,4750],
@@ -131,6 +134,8 @@ def create_wellfield(layers = [1],
 #wellfield_df = pd.DataFrame(wellfield,columns=["layer","row","column","pumping_rate"])              
 #pd.DataFrame.as_matrix(wellfield_df)                  
 
+
+## Well package 
 wel_sp1 = create_wellfield()
 wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 2000, pumping_rate = -2000)
 wel_sp4 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1900)
@@ -162,6 +167,40 @@ pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1),
                       
 wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
+### MNW-2 package
+
+node_data  = pd.read_csv('wells_nodes.csv')
+
+node_data = node_data.to_records()
+node_data
+
+
+stress_period_data  = pd.read_csv('wells_times.csv')
+
+pers = stress_period_data.groupby('per')
+stress_period_data = {i: pers.get_group(i).to_records() for i in range(0,10)}
+
+
+mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=56,
+                 node_data=node_data, 
+                 stress_period_data=stress_period_data,
+                 itmp=[56, 56, 56, 56, 56, 56, 56, 56, 56, 56] # reuse second per pumping for last stress period
+                 )
+
+
+mnw2.write_file("wellfield.mnw2")
+
+
+#mnwi = flopy.modflow.mfmnwi.ModflowMnwi(model=mf, 
+#                                        wel1flag=1, 
+#                                        qsumflag=1, 
+#                                        byndflag=1, 
+#                                        mnwobs=1, 
+#                                        wellid_unit_qndflag_qhbflag_concflag=None, 
+#                                        extension='mnwi', 
+#                                        unitnumber=58)
+
+
 # Output control
 
 output_features = ['save head', 
@@ -169,23 +208,23 @@ output_features = ['save head',
 
 output_steps       = {(0, 0): output_features,
                       (1, 0): [],
-                      (1, 9): output_features,
+                      (1, 175679): output_features,
                       (2, 0): [],
-                      (2, 9): output_features,
+                      (2, 175679): output_features,
                       (3, 0): [],
-                      (3, 9): output_features,
+                      (3, 175679): output_features,
                       (4, 0): [],
-                      (4, 9): output_features,
+                      (4, 175679): output_features,
                       (5, 0): [],
-                      (5, 9): output_features,
+                      (5, 175679): output_features,
                       (6, 0): [],
-                      (6, 9): output_features,
+                      (6, 175679): output_features,
                       (7, 0): [],
-                      (7, 9): output_features,
+                      (7, 175679): output_features,
                       (8, 0): [],
-                      (8, 9): output_features,
+                      (8, 175679): output_features,
                       (9, 0): [],
-                      (9, 9): output_features,
+                      (9, 175679): output_features,
                       (10, 0): []
                                }
 
@@ -264,7 +303,7 @@ for iplot, time in enumerate(times):
     #plt.subplot(1, len(mytimes), iplot + 1, aspect='equal')
     plt.subplot(1, 1, 1, aspect='equal')
     plt.title('total time: ' + str(time) + ' days\n(Stress period: ' + str(str_per) + ")")
-    modelmap = flopy.plot.ModelMap(model=mf, layer=1)
+    modelmap = flopy.plot.ModelMap(model=mf, layer=0)
     qm = modelmap.plot_ibound()
     lc = modelmap.plot_grid()
     #qm = modelmap.plot_bc('GHB', alpha=0.5)
@@ -287,7 +326,8 @@ plt.show()
 head = headobj.get_data(totim=times[len(times)-1])
 levels = np.arange(-50, 10, .5)
 
-for il in range(nlay):
+    il = 0
+    time = times[len(times)-1]
     mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(1, 1, 1, aspect='equal')
@@ -311,7 +351,7 @@ obs_measured  = np.loadtxt('obs_head_time.csv',
                            skiprows = 1)
 
 ### User defined observation point in format: layer, x, y-coordinate (absolute)
-obsPoint = [1, 4850, 2500]
+obsPoint = [0, 4850, 2500]
 
 #### Convert observation point to layer, column, row format
 idx = (obsPoint[0], 
