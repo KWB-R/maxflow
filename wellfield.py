@@ -2,7 +2,7 @@ import numpy as np
 import flopy
 import os
 import pandas as pd
-
+import math
 
 # Model domain and grid definition
 Lx = 5000.
@@ -10,7 +10,7 @@ Ly = 5000.
 ztop = 20.
 zbot = 0.
 nlay = 1
-grid_spacing = 10
+grid_spacing = 50
 delr = grid_spacing
 delc = grid_spacing
 delv = np.array([ztop-zbot], dtype=np.float32)
@@ -38,9 +38,25 @@ ibound[:, :, -1] = 1
 iniHead = 40.
 strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
 
+
+def vonNeumann_max_dt(transmiss ,
+                      s,
+                      dx 
+                      ):
+
+    return(s*dx**2/(4*transmiss))
+
+    
+max_dt = vonNeumann_max_dt(transmiss = hk*delv, 
+                  s = ss, 
+                  dx = delr)
+print('Setting time step to:', str(max_dt[0]), '(days) for all stress periods')
+
+ntimesteps = np.ceil(perlen[1:10]/max_dt).astype(int)
+
 # Time step parameters
 perlen = [1, 122, 122, 122, 122, 122, 122, 122, 122, 122] #length of a stress period
-nstp = [1, 175680, 175680, 175680, 175680, 175680, 175680, 175680, 175680, 175680] #number of time steps in a stress period
+nstp = np.append([1], ntimesteps) #number of time steps in a stress period
 steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
 nper = 10 #number of stress periods
 
@@ -171,6 +187,13 @@ wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
 node_data  = pd.read_csv('wells_nodes.csv')
 
+node_data["i"] = node_data["y"]/delr
+node_data["j"] = node_data["x"]/delc
+
+#ids = np.arange(80, 80+node_data["wellid"].count()).astype(str)
+#np.array(map(str, ids))
+#"DATA          " + ids + " " + node_data["wellid"].values.astype(str) + ".byn"
+
 node_data = node_data.to_records()
 node_data
 
@@ -181,10 +204,10 @@ pers = stress_period_data.groupby('per')
 stress_period_data = {i: pers.get_group(i).to_records() for i in range(0,10)}
 
 
-mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=56,
+mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=252,
                  node_data=node_data, 
                  stress_period_data=stress_period_data,
-                 itmp=[56, 56, 56, 56, 56, 56, 56, 56, 56, 56] # reuse second per pumping for last stress period
+                 itmp=np.repeat(252, 10) # reuse second per pumping for last stress period
                  )
 
 
