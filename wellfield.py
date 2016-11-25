@@ -60,7 +60,7 @@ totsim = 366
 nper = 10 #number of stress periods
 steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
 
-t_perPeriod = (totsim-perlen[0])/(nper-1)
+t_perPeriod = (totsim-1)/(nper-1) # totsim - 1 (-1 because steady state time period = 1day)
 #perlen = [1, 122, 122, 122, 122, 122, 122, 122, 122] #length of a stress period
 perlen =np.append([1], np.repeat(t_perPeriod,nper-1)) #length of a stress period
 ntimesteps = np.ceil(perlen[1:nper]/max_dt).astype(int)
