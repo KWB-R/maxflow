@@ -10,12 +10,12 @@ Ly = 5000.
 ztop = 20.
 zbot = 0.
 nlay = 1
-grid_spacing = 50
+grid_spacing = 25
 delr = grid_spacing
 delc = grid_spacing
 delv = np.array([ztop-zbot], dtype=np.float32)
-nrow = int(Lx / delr)
-ncol = int(Ly / delc)
+ncol = int(Lx / delr)
+nrow = int(Ly / delc)
 botm = np.array([zbot], dtype=np.float32)
 hk = np.array([2e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
@@ -52,13 +52,20 @@ max_dt = vonNeumann_max_dt(transmiss = hk*delv,
                   dx = delr)
 print('Setting time step to:', str(max_dt[0]), '(days) for all stress periods')
 
-ntimesteps = np.ceil(perlen[1:10]/max_dt).astype(int)
+### Desired total simulation time
+totsim = 366
+
 
 # Time step parameters
-perlen = [1, 122, 122, 122, 122, 122, 122, 122, 122, 122] #length of a stress period
-nstp = np.append([1], ntimesteps) #number of time steps in a stress period
-steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
 nper = 10 #number of stress periods
+steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
+
+t_perPeriod = (totsim-perlen[0])/(nper-1)
+#perlen = [1, 122, 122, 122, 122, 122, 122, 122, 122] #length of a stress period
+perlen =np.append([1], np.repeat(t_perPeriod,nper-1)) #length of a stress period
+ntimesteps = np.ceil(perlen[1:nper]/max_dt).astype(int)
+
+nstp = np.append([1], ntimesteps) #number of time steps in a stress period
 
 # Flopy objects
 modelname = 'wellfield'
@@ -187,8 +194,9 @@ wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
 node_data  = pd.read_csv('wells_nodes.csv')
 
-node_data["i"] = node_data["y"]/delr
-node_data["j"] = node_data["x"]/delc
+node_data["i"] = (node_data["y"]/delr).astype(int)
+node_data["j"] = (node_data["x"]/delc).astype(int)
+
 
 #ids = np.arange(80, 80+node_data["wellid"].count()).astype(str)
 #np.array(map(str, ids))
@@ -201,13 +209,14 @@ node_data
 stress_period_data  = pd.read_csv('wells_times.csv')
 
 pers = stress_period_data.groupby('per')
-stress_period_data = {i: pers.get_group(i).to_records() for i in range(0,10)}
+stress_period_data = {i: pers.get_group(i).to_records() for i in range(0,nper)}
 
-
-mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=252,
+nwells = len(node_data)
+                      
+mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=nwells,
                  node_data=node_data, 
                  stress_period_data=stress_period_data,
-                 itmp=np.repeat(252, 10) # reuse second per pumping for last stress period
+                 itmp=np.repeat(nwells, nper) # reuse second per pumping for last stress period
                  )
 
 
@@ -349,7 +358,7 @@ plt.show()
 head = headobj.get_data(totim=times[len(times)-1])
 levels = np.arange(-50, 10, .5)
 
-    il = 0
+il = 0
     time = times[len(times)-1]
     mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
     fig = plt.figure(figsize=(10, 10))
