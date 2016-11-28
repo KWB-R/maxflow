@@ -10,7 +10,7 @@ Ly = 5000.
 ztop = 20.
 zbot = 0.
 nlay = 1
-grid_spacing = 25
+grid_spacing = 10
 delr = grid_spacing
 delc = grid_spacing
 delv = np.array([ztop-zbot], dtype=np.float32)
@@ -159,36 +159,36 @@ def create_wellfield(layers = [0],
 
 
 ## Well package 
-wel_sp1 = create_wellfield()
-wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 2000, pumping_rate = -2000)
-wel_sp4 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1900)
-wel_sp5 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1600)
-wel_sp6 = create_wellfield(spacing_x =1000, spacing_y = 500, pumping_rate = -1200)
-wel_sp7 = create_wellfield(spacing_x =500, spacing_y = 250, pumping_rate = -200)
-wel_sp8 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -105)
-wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -90)                                           
+#wel_sp1 = create_wellfield()
+#wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 2000, pumping_rate = -2000)
+#wel_sp4 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1900)
+#wel_sp5 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1600)
+#wel_sp6 = create_wellfield(spacing_x =1000, spacing_y = 500, pumping_rate = -1200)
+#wel_sp7 = create_wellfield(spacing_x =500, spacing_y = 250, pumping_rate = -200)
+#wel_sp8 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -105)
+#wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -90)                                           
 #wel_sp10 = create_wellfield(spacing_x =250, spacing_y = 250,pumping_rate=-90)                                            
 #wel_sp11 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-150)
 #wel_sp12 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-70)
                                             
-wfs = wel_sp9.append(create_wellfield(spacing_x =1000, spacing_y = 1000, 
-                        extent_x = [2500,2600],
-                        extent_y = [500,4500],
-                        pumping_rate=-50*24))
-
-
-pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1), 
-                      1: pd.DataFrame.as_matrix(wel_sp1), 
-                      2: pd.DataFrame.as_matrix(wel_sp3),
-                      3: pd.DataFrame.as_matrix(wel_sp4),
-                      4: pd.DataFrame.as_matrix(wel_sp5),
-                      5: pd.DataFrame.as_matrix(wel_sp6), 
-                      6: pd.DataFrame.as_matrix(wel_sp7),
-                      7: pd.DataFrame.as_matrix(wel_sp8),
-                      8: pd.DataFrame.as_matrix(wel_sp9),
-                      9: pd.DataFrame.as_matrix(wfs)}
-                      
-wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
+#wfs = wel_sp9.append(create_wellfield(spacing_x =1000, spacing_y = 1000, 
+#                        extent_x = [2500,2600],
+#                        extent_y = [500,4500],
+#                        pumping_rate=-50*24))
+#
+#
+#pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1), 
+#                      1: pd.DataFrame.as_matrix(wel_sp1), 
+#                      2: pd.DataFrame.as_matrix(wel_sp3),
+#                      3: pd.DataFrame.as_matrix(wel_sp4),
+#                      4: pd.DataFrame.as_matrix(wel_sp5),
+#                      5: pd.DataFrame.as_matrix(wel_sp6), 
+#                      6: pd.DataFrame.as_matrix(wel_sp7),
+#                      7: pd.DataFrame.as_matrix(wel_sp8),
+#                      8: pd.DataFrame.as_matrix(wel_sp9),
+#                      9: pd.DataFrame.as_matrix(wfs)}
+#                      
+#wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
 ### MNW-2 package
 
@@ -216,21 +216,25 @@ nwells = len(node_data)
 mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=nwells,
                  node_data=node_data, 
                  stress_period_data=stress_period_data,
-                 itmp=np.repeat(nwells, nper) # reuse second per pumping for last stress period
+                 itmp=np.repeat(nwells, nper), # reuse second per pumping for last stress period
+                 extension='mnw2', 
+                 unitnumber=23
                  )
 
-
-mnw2.write_file("wellfield.mnw2")
-
-
+#mf.add_package(mnw2)
+#
+#
+#
 #mnwi = flopy.modflow.mfmnwi.ModflowMnwi(model=mf, 
-#                                        wel1flag=1, 
-#                                        qsumflag=1, 
-#                                        byndflag=1, 
-#                                        mnwobs=1, 
-#                                        wellid_unit_qndflag_qhbflag_concflag=None, 
-#                                        extension='mnwi', 
-#                                        unitnumber=58)
+#                                        wel1flag=0, 
+#                                        qsumflag=0, 
+#                                        byndflag=82,
+#                                        mnwobs = 2,
+#                                        wellid_unit_qndflag_qhbflag_concflag = [['well1', 45, 0, 0],
+#                                                                                ['well2', 45, 0, 0]],
+#                                        unitnumber=79,
+#                                        extension='mnwi')
+
 
 
 # Output control
@@ -272,6 +276,19 @@ oc = flopy.modflow.ModflowOc(mf,
 # Write the model input files
 mf.write_input()
 
+###Adding MNW2 & MWNI in MODFLOW input file 
+try:
+    mmw2
+except NameError:
+    print("Writing MNW2 & MNWI package to " + modelname + ".nam file")
+    with open(modelname + ".nam", 'a') as f:
+        f.write('MNW2          23 ' + modelname + '.mnw2')
+        f.write('\nMNWI          79 ' + modelname + '.mnwi')
+        f.write('\nDATA          82 ' + modelname + '.byn')
+else:
+    print("Not using MNW2 & MNWI package")
+
+
 
 ## Export model data as shapefile
 #mf.lpf.hk.export(os.path.join('hk.shp'))
@@ -281,7 +298,7 @@ mf.write_input()
 success, mfoutput = mf.run_model(silent=False, pause=False)
 if not success:
     raise Exception('MODFLOW did not terminate normally.')
-
+    
 
 # Imports
 import matplotlib.pyplot as plt
@@ -402,8 +419,8 @@ plt.show()
 
 mf_list = flopy.utils.MfListBudget(modelname+".list")
 budget = mf_list.get_budget()
-timestep = 9
-for stress_period in np.linspace(2,8,7):
+for stress_period in range(2,nper):
+    timestep = nstp[stressperiod-1]
     data = mf_list.get_data(kstpkper=(timestep,stress_period))
     plt.title('water budget for ' + str(stress_period + 1) + ' stress period at ' + str(timestep + 1) + ". timestep\n")
     plt.bar(data['index'], data['value'])

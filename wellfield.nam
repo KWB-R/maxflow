@@ -6,11 +6,9 @@ BAS6          13 wellfield.bas
 LPF           15 wellfield.lpf 
 PCG           27 wellfield.pcg 
 OC            14 wellfield.oc 
-MNW2          23 wellfield.mnw2
-MNWI          79 wellfield.mnwi
-DATA          81 wellfield.qsu
-DATA          82 wellfield.byn
-DATA          45 wellfield.wlA
 DATA(BINARY)  51 wellfield.hds REPLACE
 DATA(BINARY)  52 wellfield.ddn REPLACE
 DATA(BINARY)  53 wellfield.cbc REPLACE
+MNW2          23 wellfield.mnw2
+MNWI          79 wellfield.mnwi
+DATA          82 wellfield.byn
