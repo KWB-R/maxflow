@@ -10,7 +10,7 @@ Ly = 5000.
 ztop = 20.
 zbot = 0.
 nlay = 1
-grid_spacing = 10
+grid_spacing = 50
 delr = grid_spacing
 delc = grid_spacing
 delv = np.array([ztop-zbot], dtype=np.float32)
@@ -221,6 +221,8 @@ mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=nwells,
                  unitnumber=23
                  )
 
+
+mnw2.write_file(modelname + ".mnw2")
 #mf.add_package(mnw2)
 #
 #
