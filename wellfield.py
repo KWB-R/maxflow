@@ -110,9 +110,9 @@ for il in range(nlay):
     for ir in range(nrow):
         bound_sp1.append([il, ir, 0, stageleft, condleft])
 #        bound_sp1.append([il, ir, ncol - 1, stageright, condright])
-print('Adding ', len(bound_sp1), 'GHBs for stress period 1.')
+#print('Adding ', len(bound_sp1), 'GHBs for stress period 1.')
 
-boundary_data = {0: bound_sp1}
+#boundary_data = {0: bound_sp1}
 
 # Create the flopy ghb object
 #ghb = flopy.modflow.ModflowGhb(mf, stress_period_data = boundary_data)
@@ -376,19 +376,19 @@ head = headobj.get_data(totim=times[len(times)-1])
 levels = np.arange(-50, 10, .5)
 
 il = 0
-    time = times[len(times)-1]
-    mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(1, 1, 1, aspect='equal')
-    title = ax.set_title(mytitle)
-    modelmap = flopy.plot.ModelMap(model=mf, rotation=0)
-    quadmesh = modelmap.plot_ibound()
-    contour_set = modelmap.plot_array(head[il,:,:], 
+time = times[len(times)-1]
+mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(1, 1, 1, aspect='equal')
+title = ax.set_title(mytitle)
+modelmap = flopy.plot.ModelMap(model=mf, rotation=0)
+quadmesh = modelmap.plot_ibound()
+contour_set = modelmap.plot_array(head[il,:,:], 
                                   masked_values=[999.], 
                                   alpha=0.5)
-    linecollection = modelmap.plot_grid()
-    cb = plt.colorbar(contour_set, shrink=0.4)
-    plt.show()
+linecollection = modelmap.plot_grid()
+cb = plt.colorbar(contour_set, shrink=0.4)
+plt.show()
 
 
 ###Plot the head versus time
