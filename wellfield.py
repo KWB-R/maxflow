@@ -159,34 +159,34 @@ def create_wellfield(layers = [0],
 
 
 ## Well package 
-#wel_sp1 = create_wellfield()
-#wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 2000, pumping_rate = -2000)
-#wel_sp4 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1900)
-#wel_sp5 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1600)
-#wel_sp6 = create_wellfield(spacing_x =1000, spacing_y = 500, pumping_rate = -1200)
-#wel_sp7 = create_wellfield(spacing_x =500, spacing_y = 250, pumping_rate = -200)
-#wel_sp8 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -105)
-#wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -90)                                           
-#wel_sp10 = create_wellfield(spacing_x =250, spacing_y = 250,pumping_rate=-90)                                            
-#wel_sp11 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-150)
-#wel_sp12 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-70)
+wel_sp1 = create_wellfield()
+wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 2000, pumping_rate = -2000)
+wel_sp4 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1900)
+wel_sp5 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1600)
+wel_sp6 = create_wellfield(spacing_x =1000, spacing_y = 500, pumping_rate = -1200)
+wel_sp7 = create_wellfield(spacing_x =500, spacing_y = 250, pumping_rate = -200)
+wel_sp8 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -105)
+wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -90)                                           
+wel_sp10 = create_wellfield(spacing_x =250, spacing_y = 250,pumping_rate=-90)                                            
+wel_sp11 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-150)
+wel_sp12 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-70)
                                             
-#wfs = wel_sp9.append(create_wellfield(spacing_x =1000, spacing_y = 1000, 
-#                        extent_x = [2500,2600],
-#                        extent_y = [500,4500],
-#                        pumping_rate=-50*24))
-#
-#
-#pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1), 
-#                      1: pd.DataFrame.as_matrix(wel_sp1), 
-#                      2: pd.DataFrame.as_matrix(wel_sp3),
-#                      3: pd.DataFrame.as_matrix(wel_sp4),
-#                      4: pd.DataFrame.as_matrix(wel_sp5),
-#                      5: pd.DataFrame.as_matrix(wel_sp6), 
-#                      6: pd.DataFrame.as_matrix(wel_sp7),
-#                      7: pd.DataFrame.as_matrix(wel_sp8),
-#                      8: pd.DataFrame.as_matrix(wel_sp9),
-#                      9: pd.DataFrame.as_matrix(wfs)}
+wfs = wel_sp9.append(create_wellfield(spacing_x =1000, spacing_y = 1000, 
+                        extent_x = [2500,2600],
+                        extent_y = [500,4500],
+                        pumping_rate=-50*24))
+
+
+pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1), 
+                      1: pd.DataFrame.as_matrix(wel_sp1), 
+                      2: pd.DataFrame.as_matrix(wel_sp3),
+                      3: pd.DataFrame.as_matrix(wel_sp4),
+                      4: pd.DataFrame.as_matrix(wel_sp5),
+                      5: pd.DataFrame.as_matrix(wel_sp6), 
+                      6: pd.DataFrame.as_matrix(wel_sp7),
+                      7: pd.DataFrame.as_matrix(wel_sp8),
+                      8: pd.DataFrame.as_matrix(wel_sp9),
+                      9: pd.DataFrame.as_matrix(wfs)}
 #                      
 #wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
@@ -196,6 +196,8 @@ node_data  = pd.read_csv('wells_nodes.csv')
 
 node_data["i"] = (node_data["y"]/delr).astype(int)
 node_data["j"] = (node_data["x"]/delc).astype(int)
+
+wells_location = node_data
 
 
 #ids = np.arange(80, 80+node_data["wellid"].count()).astype(str)
@@ -207,6 +209,12 @@ node_data
 
 
 stress_period_data  = pd.read_csv('wells_times.csv')
+
+wells_info =  pd.merge(left=wells_location,
+                       right=stress_period_data, 
+                       left_on='wellid', 
+                        right_on='wellid')
+wells_info = wells_info[wells_info['qdes'] != 0]
 
 pers = stress_period_data.groupby('per')
 stress_period_data = {i: pers.get_group(i).to_records() for i in range(0,nper)}
@@ -339,7 +347,7 @@ for iplot, time in enumerate(times):
     ### Get pumping wells 
     str_per = getStressPeriod(time)
     pumping_wells = pumping_data[str_per]
-    
+    mnw_wells = wells_info[wells_info['per'] == str_per-1] 
     #Print statistics
     print('Head statistics')
     print('  min: ', head.min())
@@ -361,14 +369,32 @@ for iplot, time in enumerate(times):
     cs = modelmap.contour_array(head, levels=levels)
     plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
     quiver = modelmap.plot_discharge(frf, fff, head=head)
-    mfc = 'None'
-    if (iplot+1) == len(times):
-        mfc='black'
-    plt.plot(pumping_wells[:,2]*delc, pumping_wells[:,1]*delr, lw=0, marker='o', markersize=3, 
-             markeredgewidth=1,
-             markeredgecolor='black', markerfacecolor=mfc, zorder=9)
-    #plt.text(wpt[0]+25, wpt[1]-25, 'well', size=12, zorder=12)
+#    mfc = 'None'
+#    if (iplot+1) == len(times):
+    mfc='black'
+    try:
+        mmw2
+    except NameError:
+        print("Using MNW2 package and plotting active wells")
+        plt.plot(mnw_wells['j']*delc, 
+                 mnw_wells['i']*delr, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='black', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
+    else:
+        print("Using WEL package and plotting active wells")
+        plt.plot(pumping_wells[:,2]*delc, 
+                 pumping_wells[:,1]*delr, 
+                 lw=0, marker='o', markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='black', markerfacecolor=mfc, zorder=9)
     plt.show()
+    #plt.text(wpt[0]+25, wpt[1]-25, 'well', size=12, zorder=12)
+
 
 plt.show()
 
