@@ -251,36 +251,24 @@ mnw2.write_file(modelname + ".mnw2")
 
 output_features = ['save head', 
                    'save budget']
-
-output_steps       = {(0, 0): output_features,
-                      (1, 0): [],
-                      (1, nstp[1]-1): output_features,
-                      (2, 0): [],
-                      (2, nstp[2]-1): output_features,
-                      (3, 0): [],
-                      (3, nstp[3]-1): output_features,
-                      (4, 0): [],
-                      (4, nstp[4]-1): output_features,
-                      (5, 0): [],
-                      (5, nstp[5]-1): output_features,
-                      (6, 0): [],
-                      (6, nstp[6]-1): output_features,
-                      (7, 0): [],
-                      (7, nstp[7]-1): output_features,
-                      (8, 0): [],
-                      (8, nstp[8]-1): output_features,
-                      (9, 0): [],
-                      (9, nstp[9]-1): output_features,
-                      (10, 0): []
-                               }
-
-#stress_period_data = {(nper-1,  nstp[0]): ['save head',
-#                                           'save budget'],
-#                      (nper-1, nstp[nper-1]): []}
+                             
+                               
+ocdict = {}
+for sper in range(0,nper-1):
+    if  steady[sper]==False:
+        key = (sper, nstp[sper]-1)
+        ocdict[key] = output_features
+        key = (sper+1, 0)  
+        ocdict[key] = [] 
+    else:
+        key = (sper, 0)
+        ocdict[key] = output_features
+        key = (sper+1, 0)  
+        ocdict[key] = [] 
 
 
 oc = flopy.modflow.ModflowOc(mf, 
-                            stress_period_data = output_steps,
+                            stress_period_data = ocdict,
                              compact=True)
 
 # Write the model input files
