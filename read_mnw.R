@@ -13,7 +13,7 @@ wells <- wells[,c("NODE", "Lay", "Row", "Col") := NULL]
 save(wells, file = "wells.RData")
 
 
-load("wells.RData")
+#load("wells.RData")
 
 
 
@@ -24,6 +24,14 @@ wells_perDay <- wells %>%
          summarise(Q_node_median = median(Q_node), 
                    hwell_median = median(hwell), 
                    hcell_median = median(hcell))
+
+# Q sum per well for whole simulation
+wells_perDay %>% 
+  ungroup() %>% 
+  mutate(WELLID = as.numeric(gsub("WELL", "", .$WELLID))) %>%  
+  group_by(WELLID) %>% 
+  summarise(Qsum = -sum(Q_node_median)) %>%  
+  plot(Qsum ~ WELLID, data = ., type="b", col="blue")
 
 
 wells_perDay_tidy <- tidyr::gather(data = wells_perDay,Key, Value, -Totim, -WELLID)
