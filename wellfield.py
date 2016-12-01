@@ -25,7 +25,7 @@ sy = np.array([0.123, 0.023, 0.123], #specific yield
               dtype=np.float32)
 ss = np.array([1.e-3, 1.e-3, 1.e-3], #specific storage
               dtype=np.float32)
-laytyp = np.int_([1, 0, 0]) # 1 - ungespannt, 0 - gespannt
+laytyp = np.int_([1, 0, 1]) # 1 - ungespannt, 0 - gespannt
 
 plot_layer = nlay-1
 
@@ -102,7 +102,9 @@ lpf = flopy.modflow.ModflowLpf(mf, #layer-property-flow
                                sy = sy, 
                                ss = ss, 
                                laytyp = laytyp)
-pcg = flopy.modflow.ModflowPcg(mf) #Preconditioned Conjugate-Gradient
+pcg = flopy.modflow.ModflowPcg(mf,
+                               hclose = 1E-4,
+                               rclose = 1E-4) #Preconditioned Conjugate-Gradient
 
 # Make list for stress period 1
 stageleft = 70. #head on the left boundary
