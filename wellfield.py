@@ -397,15 +397,14 @@ plt.show()
 head = headobj.get_data(totim=times[len(times)-1])
 levels = np.arange(-50, 10, .5)
 
-il = 0
 time = times[len(times)-1]
-mytitle = 'Heads in layer ' + str(il) + ' after '+ str(time) + ' days of simulation'
+mytitle = 'Heads in layer ' + str(plot_layer) + ' after '+ str(time) + ' days of simulation'
 fig = plt.figure(figsize=(10, 10))
 ax = fig.add_subplot(1, 1, 1, aspect='equal')
 title = ax.set_title(mytitle)
 modelmap = flopy.plot.ModelMap(model=mf, rotation=0)
 quadmesh = modelmap.plot_ibound()
-contour_set = modelmap.plot_array(head[il,:,:], 
+contour_set = modelmap.plot_array(head[plot_layer,:,:], 
                                   masked_values=[999.], 
                                   alpha=0.5)
 linecollection = modelmap.plot_grid()
