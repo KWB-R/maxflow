@@ -43,10 +43,11 @@ strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
 
 def vonNeumann_max_dt(transmiss ,
                       s,
-                      dx 
+                      dx,
+                      const = 0.49
                       ):
 
-    return(s*dx**2/(4*transmiss))
+    return(s*dx**2/(2*transmiss/const))
 
     
 max_dt = min(vonNeumann_max_dt(transmiss = hk*delv, 
