@@ -17,17 +17,17 @@ delv = np.array([40, 20, 20], dtype=np.float32)
 nrow = int(Lx / delr)
 ncol = int(Ly / delc)
 botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
-hk = np.array([2e-5*3600*24, 10e-8*3600*24, 2e-5*3600*24], #horizontal conductivity
+hk = np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([2e-5*3600*24, 10e-8*3600*24, 2e-5*3600*24], #vertical conductivity
+vka =  np.array([2e-6*3600*24, 1e-9*3600*24, 3e-6*3600*24], #vertical conductivity
                 dtype=np.float32)
 sy = np.array([0.123, 0.023, 0.123], #specific yield
               dtype=np.float32)
 ss = np.array([1.e-3, 1.e-3, 1.e-3], #specific storage
               dtype=np.float32)
-laytyp = np.int_([1, 0, 1]) # 1 - ungespannt, 0 - gespannt
+laytyp = np.int_([1, 1, 1]) # 1 - ungespannt, 0 - gespannt
 
-plot_layer = nlay-1
+
 
 # Variables for the BAS package
 # Note that changes from the previous tutorial!
@@ -102,6 +102,7 @@ lpf = flopy.modflow.ModflowLpf(mf, #layer-property-flow
                                sy = sy, 
                                ss = ss, 
                                laytyp = laytyp)
+#                               constcv = True)
 pcg = flopy.modflow.ModflowPcg(mf,
                                hclose = 1E-4,
                                rclose = 1E-4) #Preconditioned Conjugate-Gradient
@@ -392,7 +393,7 @@ for iplot, time in enumerate(times):
 
 plt.show()
 
-
+plot_layer = 1
 
 head = headobj.get_data(totim=times[len(times)-1])
 levels = np.arange(-50, 10, .5)
