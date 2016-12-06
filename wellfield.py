@@ -17,9 +17,9 @@ delv = np.array([40, 20, 20], dtype=np.float32)
 nrow = int(Lx / delr)
 ncol = int(Ly / delc)
 botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
-hk = np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #horizontal conductivity
+hk = np.array([2e-5*3600*24, 1e-7*3600*24, 3e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([2e-6*3600*24, 1e-9*3600*24, 3e-6*3600*24], #vertical conductivity
+vka =  np.array([2e-6*3600*24, 1e-8*3600*24, 3e-6*3600*24], #vertical conductivity
                 dtype=np.float32)
 sy = np.array([0.123, 0.023, 0.123], #specific yield
               dtype=np.float32)
@@ -27,7 +27,7 @@ ss = np.array([1.e-3, 1.e-3, 1.e-3], #specific storage
               dtype=np.float32)
 laytyp = np.int_([1, 1, 1]) # 1 - ungespannt, 0 - gespannt
 
-
+#plot_layer = nlay-1
 
 # Variables for the BAS package
 # Note that changes from the previous tutorial!
@@ -57,7 +57,7 @@ max_dt = min(vonNeumann_max_dt(transmiss = hk*delv,
 print('Setting time step to:', str(max_dt), '(days) for all stress periods')
 
 ### Desired total simulation time
-totsim = 3*365+1
+totsim = 9*365+1
 
 
 # Time step parameters
@@ -67,8 +67,8 @@ steady = [True, False, False, False, False, False, False, False, False, False] #
 t_perPeriod = (totsim-1)/(nper-1) # totsim - 1 (-1 because steady state time period = 1day)
 #perlen = [1, 122, 122, 122, 122, 122, 122, 122, 122] #length of a stress period
 perlen =np.append([1], np.repeat(t_perPeriod,nper-1)) #length of a stress period
-ntimesteps = np.ceil(perlen[1:nper]/max_dt).astype(int)
-
+#ntimesteps = np.ceil(perlen[1:nper]/max_dt).astype(int)
+ntimesteps = np.ceil(perlen[1:nper]/1).astype(int)
 nstp = np.append([1], ntimesteps) #number of time steps in a stress period
 
 # Flopy objects
@@ -101,8 +101,8 @@ lpf = flopy.modflow.ModflowLpf(mf, #layer-property-flow
                                vka = vka, 
                                sy = sy, 
                                ss = ss, 
-                               laytyp = laytyp)
-#                               constcv = True)
+                               laytyp = laytyp,
+                               constantcv = True)
 pcg = flopy.modflow.ModflowPcg(mf,
                                hclose = 1E-4,
                                rclose = 1E-4) #Preconditioned Conjugate-Gradient
@@ -127,10 +127,10 @@ for il in range(nlay):
 # Create the well package
 # Remember to use zero-based layer, row, column indices!
 
-def create_wellfield(layers = [0],
+def create_wellfield(layers = [2],
                      spacing_x = 1000, 
                      spacing_y = 1000, 
-                     extent_x = [4250,4750],
+                     extent_x = [2600,4800],
                      extent_y = [500,4500],
                      pumping_rate = 0):
 
@@ -167,35 +167,35 @@ def create_wellfield(layers = [0],
 
 ## Well package 
 wel_sp1 = create_wellfield()
-wel_sp3 = create_wellfield(spacing_x = 1000, spacing_y = 2000, pumping_rate = -2000)
-wel_sp4 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1900)
-wel_sp5 = create_wellfield(spacing_x =1000, spacing_y = 1000, pumping_rate = -1600)
-wel_sp6 = create_wellfield(spacing_x =1000, spacing_y = 500, pumping_rate = -1200)
-wel_sp7 = create_wellfield(spacing_x =500, spacing_y = 250, pumping_rate = -200)
-wel_sp8 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -105)
-wel_sp9 = create_wellfield(spacing_x =250, spacing_y = 250, pumping_rate = -90)                                           
-wel_sp10 = create_wellfield(spacing_x =250, spacing_y = 250,pumping_rate=-90)                                            
+wel_sp3 = create_wellfield(spacing_x = 200, spacing_y = 200, pumping_rate = -50)
+wel_sp4 = create_wellfield(spacing_x = 200, spacing_y = 200, pumping_rate = -75)
+wel_sp5 = create_wellfield(spacing_x = 200, spacing_y = 200, pumping_rate = -100)
+wel_sp6 = create_wellfield(spacing_x =200, spacing_y = 200, pumping_rate = -150)
+wel_sp7 = create_wellfield(spacing_x =200, spacing_y = 200, pumping_rate = -200)
+wel_sp8 = create_wellfield(spacing_x =200, spacing_y = 200, pumping_rate = -150)
+wel_sp9 = create_wellfield(spacing_x =200, spacing_y = 200, pumping_rate = -300)                                           
+wel_sp10 = create_wellfield(spacing_x =200, spacing_y = 200,pumping_rate= -800)                                            
 wel_sp11 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-150)
 wel_sp12 = create_wellfield(spacing_x =150, spacing_y = 150,pumping_rate=-70)
                                             
-wfs = wel_sp9.append(create_wellfield(spacing_x =1000, spacing_y = 1000, 
+wfs = wel_sp6.append(create_wellfield(spacing_x =1000, spacing_y = 1000, 
                         extent_x = [2500,2600],
                         extent_y = [500,4500],
                         pumping_rate=-50*24))
 
 
 pumping_data =       {0: pd.DataFrame.as_matrix(wel_sp1), 
-                      1: pd.DataFrame.as_matrix(wel_sp1), 
-                      2: pd.DataFrame.as_matrix(wel_sp3),
-                      3: pd.DataFrame.as_matrix(wel_sp4),
-                      4: pd.DataFrame.as_matrix(wel_sp5),
-                      5: pd.DataFrame.as_matrix(wel_sp6), 
+                      1: pd.DataFrame.as_matrix(wel_sp3), 
+                      2: pd.DataFrame.as_matrix(wel_sp4),
+                      3: pd.DataFrame.as_matrix(wel_sp5),
+                      4: pd.DataFrame.as_matrix(wel_sp6),
+                      5: pd.DataFrame.as_matrix(wel_sp7), 
                       6: pd.DataFrame.as_matrix(wel_sp7),
                       7: pd.DataFrame.as_matrix(wel_sp8),
-                      8: pd.DataFrame.as_matrix(wel_sp9),
-                      9: pd.DataFrame.as_matrix(wfs)}
+                      8: pd.DataFrame.as_matrix(wel_sp8),
+                      9: pd.DataFrame.as_matrix(wel_sp8)}
 #                      
-#wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
+wel = flopy.modflow.ModflowWel(mf, stress_period_data = pumping_data)
 
 ### MNW-2 package
 
@@ -228,16 +228,16 @@ stress_period_data = {i: pers.get_group(i).to_records() for i in range(0,nper)}
 
 nwells = len(node_data)
                       
-mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=nwells,
-                 node_data=node_data, 
-                 stress_period_data=stress_period_data,
-                 itmp=np.repeat(nwells, nper), # reuse second per pumping for last stress period
-                 extension='mnw2', 
-                 unitnumber=23
-                 )
+#mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=nwells,
+#                 node_data=node_data, 
+#                 stress_period_data=stress_period_data,
+#                 itmp=np.repeat(nwells, nper), # reuse second per pumping for last stress period
+#                 extension='mnw2', 
+#                 unitnumber=23
+#                 )
 
 
-mnw2.write_file(modelname + ".mnw2")
+#mnw2.write_file(modelname + ".mnw2")
 #mf.add_package(mnw2)
 #
 #
@@ -282,9 +282,7 @@ oc = flopy.modflow.ModflowOc(mf,
 mf.write_input()
 
 ###Adding MNW2 & MWNI in MODFLOW input file 
-try:
-    mmw2
-except NameError:
+if 'mnw2' in locals():
     print("Writing MNW2 & MNWI package to " + modelname + ".nam file")
     with open(modelname + ".nam", 'a') as f:
         f.write('MNW2          23 ' + modelname + '.mnw2')
@@ -303,7 +301,9 @@ else:
 success, mfoutput = mf.run_model(silent=False, pause=False)
 if not success:
     raise Exception('MODFLOW did not terminate normally.')
+
     
+plot_layer = 2 
 
 # Imports
 import matplotlib.pyplot as plt
@@ -367,9 +367,7 @@ for iplot, time in enumerate(times):
 #    mfc = 'None'
 #    if (iplot+1) == len(times):
     mfc='black'
-    try:
-        mmw2
-    except NameError:
+    if 'mnw2' in locals():
         print("Using MNW2 package and plotting active wells")
         plt.plot(mnw_wells['j']*delc, 
                  mnw_wells['i']*delr, 
@@ -393,10 +391,9 @@ for iplot, time in enumerate(times):
 
 plt.show()
 
-plot_layer = 1
+
 
 head = headobj.get_data(totim=times[len(times)-1])
-levels = np.arange(-50, 10, .5)
 
 time = times[len(times)-1]
 mytitle = 'Heads in layer ' + str(plot_layer) + ' after '+ str(time) + ' days of simulation'
@@ -406,7 +403,7 @@ title = ax.set_title(mytitle)
 modelmap = flopy.plot.ModelMap(model=mf, rotation=0)
 quadmesh = modelmap.plot_ibound()
 contour_set = modelmap.plot_array(head[plot_layer,:,:], 
-                                  masked_values=[999.], 
+                                  masked_values=[-1e+30], 
                                   alpha=0.5)
 linecollection = modelmap.plot_grid()
 cb = plt.colorbar(contour_set, shrink=0.4)
@@ -449,3 +446,5 @@ for stress_period in range(2,nper):
     plt.xticks(data['index'], data['name'], rotation=45, size=6)
     plt.ylabel('m3')
     plt.show()
+    
+    
