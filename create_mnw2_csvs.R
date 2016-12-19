@@ -61,16 +61,38 @@ wells_nodes <- entnahme_pro_jahr_und_brunnen %>%
          qcut = 0)
 
 
-### L_x und L_y: müssen mit Parametern Ly und Lx in wellfield.py übereinstimmen 
+### L_x und L_y: muessen mit Parametern Ly und Lx in wellfield.py uebereinstimmen 
 L_x <- 4000
 L_y <- 5400
 
-wells_nodes %>% mutate(x = x + (L_x - max(x)) - 200, ### 200 m Abstand vom rechten Rand
-                       y = y + (L_y - max(y))/2) ### gleicher  Abstand von oberer/unterer Rand
+wells_nodes <- wells_nodes %>% 
+              mutate(x = x + (L_x - max(x)) - 200, ### 200 m Abstand vom rechten Rand
+                     y = y + (L_y - max(y))/2) ### gleicher  Abstand von oberer/unterer Rand
 
 write.csv(wells_nodes, 
           "wells_nodes.csv",
           row.names = FALSE)
+
+### Benoetigt, da MNW2 erwartet, dass Anzahl der Brunnen je Stressperiode = Gesamtbrunnenanzahl
+wells_time_dummy <- function (wells_nodes, pers = 0:9) {
+  
+  for (myPeriod in pers) {
+    tmp <- wells_nodes %>% 
+      mutate_(per = ~myPeriod,
+              qdes = 0) %>%
+      select_(~per,~wellid, ~qdes) 
+    if(myPeriod == pers[1]) {
+      res <- tmp
+    } else {
+      res <- rbind(res,tmp)
+    }
+    
+  }
+  return(res)  
+}
+
+wells_time_dummy(wells_nodes)
+
 
 
 wells_times <- entnahme_pro_jahr_und_brunnen %>% 
@@ -81,11 +103,13 @@ wells_times <- entnahme_pro_jahr_und_brunnen %>%
   select(per,wellid, qdes) %>% 
   arrange(per, wellid)
 
-### Add per = 0 (for first steady-state period!!!!)
-wells_times <- wells_times[1,] %>% 
-               mutate(per = 0, qdes = 0) %>% 
-               rbind(wells_times) %>% 
-               rbind(wells_times[1,] %>% mutate(per = 9, qdes = 0) )
+
+
+wells_times <- wells_time_dummy(wells_nodes) %>% 
+               left_join(wells_times, by = c("per", "wellid")) %>% 
+               mutate(qdes = ifelse(is.na(qdes.y), qdes.x, qdes.y)) %>% 
+               select(per, wellid, qdes) 
+  
 
 write.csv(wells_times, 
           "wells_times.csv",
