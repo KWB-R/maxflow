@@ -5,8 +5,8 @@ import pandas as pd
 import math
 
 # Model domain and grid definition
-Lx = 5000.
-Ly = 4000.
+Ly = 5400.
+Lx = 4000.
 ztop = 80.
 zbot = 0.
 nlay = 3
@@ -14,8 +14,8 @@ grid_spacing = 50
 delr = grid_spacing
 delc = grid_spacing
 delv = np.array([40, 20, 20], dtype=np.float32)
-nrow = int(Lx / delr)
-ncol = int(Ly / delc)
+nrow = int(Ly / delr)
+ncol = int(Lx / delc)
 botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
 hk = np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
@@ -237,7 +237,7 @@ mnw2 = flopy.modflow.ModflowMnw2(model=mf, mnwmax=nwells,
                  )
 
 
-#mnw2.write_file(modelname + ".mnw2")
+mnw2.write_file(modelname + ".mnw2")
 #mf.add_package(mnw2)
 
 #
@@ -300,7 +300,7 @@ else:
 # Run the model
 success, mfoutput = mf.run_model(silent=False, pause=False)
 if not success:
-    raise Exception('MODFLOW did not terminate normally.')
+    raise Exception('MODFLOW did not terminate normalLx.')
 
     
 plot_layer = 2 
@@ -316,7 +316,7 @@ cbb = bf.CellBudgetFile(modelname+'.cbc')
 
 # Setup contour parameters
 levels = np.linspace(0, 80, 17)
-extent = (delr/2., Lx - delr/2., delc/2., Ly - delc/2.)
+extent = (delr/2., Ly - delr/2., delc/2., Lx - delc/2.)
 print('Levels: ', levels)
 print('Extent: ', extent)
 
@@ -341,8 +341,7 @@ for iplot, time in enumerate(times):
     
     ### Get pumping wells 
     str_per = getStressPeriod(time)
-    pumping_wells = pumping_data[str_per]
-    mnw_wells = wells_info[wells_info['per'] == str_per-1] 
+ 
     #Print statistics
     print('Head statistics')
     print('  min: ', head.min())
@@ -367,10 +366,19 @@ for iplot, time in enumerate(times):
 #    mfc = 'None'
 #    if (iplot+1) == len(times):
     mfc='black'
+    plt.plot(2050,4950, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
     if 'mnw2' in locals():
         print("Using MNW2 package and plotting active wells")
+        mnw_wells = wells_info[wells_info['per'] == str_per-1] 
         plt.plot(mnw_wells['j']*delc, 
-                 mnw_wells['i']*delr, 
+                 Ly-(mnw_wells['i']*delr), 
                  lw=0, 
                  marker='o', 
                  markersize=3, 
@@ -380,6 +388,7 @@ for iplot, time in enumerate(times):
                  zorder=9)
     else:
         print("Using WEL package and plotting active wells")
+        pumping_wells = pumping_data[str_per]
         plt.plot(pumping_wells[:,2]*delc, 
                  pumping_wells[:,1]*delr, 
                  lw=0, marker='o', markersize=3, 
@@ -407,6 +416,26 @@ contour_set = modelmap.plot_array(head[plot_layer,:,:],
                                   alpha=0.5)
 linecollection = modelmap.plot_grid()
 cb = plt.colorbar(contour_set, shrink=0.4)
+plt.plot(2050,4950, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
+if 'mnw2' in locals():
+        print("Using MNW2 package and plotting active wells")
+        mnw_wells = wells_info[wells_info['per'] == str_per-1] 
+        plt.plot(mnw_wells['j']*delc, 
+                 Ly-(mnw_wells['i']*delr), 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='black', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
 plt.show()
 
 
@@ -419,7 +448,7 @@ obs_measured  = np.loadtxt('obs_head_time.csv',
                            skiprows = 1)
 
 ### User defined observation point in format: layer, x, y-coordinate (absolute)
-obsPoint = [plot_layer, 4850, 2500]
+obsPoint = [plot_layer, 2050, 450]
 
 #### Convert observation point to layer, column, row format
 idx = (obsPoint[0], 
