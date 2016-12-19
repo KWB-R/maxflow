@@ -1,6 +1,6 @@
 library(shapefiles)
 library(dplyr)
-library(devtools)
+
 
 #setwd("C:/Users/mrustl/Desktop/WC_Maxflow/trunk")
 
@@ -49,6 +49,8 @@ wells_nodes <- entnahme_pro_jahr_und_brunnen %>%
   mutate(wellid = sprintf("well%d", 1:n()), 
          y = Y_WERT - min(Y_WERT), 
          x = X_WERT - min(X_WERT), 
+         ztop = 10,
+         zbotm = 0,
          losstype = "thiem",
          pumploc = 0,
          qlimit = 0,
@@ -82,7 +84,8 @@ wells_times <- entnahme_pro_jahr_und_brunnen %>%
 ### Add per = 0 (for first steady-state period!!!!)
 wells_times <- wells_times[1,] %>% 
                mutate(per = 0, qdes = 0) %>% 
-               rbind(wells_times)
+               rbind(wells_times) %>% 
+               rbind(wells_times[1,] %>% mutate(per = 9, qdes = 0) )
 
 write.csv(wells_times, 
           "wells_times.csv",
