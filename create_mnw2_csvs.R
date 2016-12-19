@@ -29,7 +29,7 @@ entnahme_pro_jahr <- entnahme_pro_jahr_und_brunnen %>%
   ungroup() %>% 
   group_by(Year) %>% 
   summarise(Gesamtfoerderung = sum(Q_perYear)) %>% 
-  mutate(label = sprintf("Jahr: %d (Gesamtförderung 6B & 6D: %3.1f Millionen m3)", 
+  mutate(label = sprintf("Jahr: %d (Gesamtf\u00F6rderung 6B & 6D: %3.1f Millionen m3)", 
                          Year, 
                          round(Gesamtfoerderung/1000000,1)))
 
