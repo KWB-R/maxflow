@@ -2,7 +2,7 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 library(lattice)
-#setwd("C:/Users/mrustl/Desktop/WC_Maxflow/branches/one-layer-south")
+setwd("C:/Users/cmenz/Desktop/WC_Maxflow/branches/3-layer_real_wells")
 
 wells <- data.table::fread(input = "wellfield.byn",skip = 1)
 
@@ -54,38 +54,38 @@ data = wells_perDay_tidy %>% filter(Key !="Q_node_median"),
 layout = c(1,1))
 dev.off()
 
-if (FALSE) {
-ggplot(wells_perDay, aes(x = Totim, y = Q_node_median)) +
-  facet_wrap(~ WELLID) +
-  geom_line() +
-  theme_bw()
-
-
-plot(well1$Totim, well1$hcell_median,ylim = c(0,80))
-points(well1$Totim, well1$hwell_median)
-
-plot(well1$Totim, well1$Q_node_median)
-
-
-setkey(wells,Totim)
-wells[WELLID == "WELL1",
-      list(Q-node_median=median(Q-node),
-           hwell_median = median(hwell),
-           hcell_median = median(hcell)),
-      by=Totim]
-
-wells$WELLID <- as.numeric(gsub("WELL", "", wells$WELLID))
-
-
-
-
-setkey(wells,Totim)
-system.time(wells[,list(Q-node_median=median(Q-node),
-                        hwell_median = median(hwell),
-                        hcell_median = median(hcell)),
-                  by=Totim])
-
-
-well1 <- wells[WELLID == "WELL1", ]
-}
+# if (FALSE) {
+# ggplot(wells_perDay, aes(x = Totim, y = Q_node_median)) +
+#   facet_wrap(~ WELLID) +
+#   geom_line() +
+#   theme_bw()
+# 
+# 
+# plot(well1$Totim, well1$hcell_median,ylim = c(0,80))
+# points(well1$Totim, well1$hwell_median)
+# 
+# plot(well1$Totim, well1$Q_node_median)
+# 
+# 
+# setkey(wells,Totim)
+# wells[WELLID == "WELL1",
+#       list(Q-node_median=median(Q-node),
+#            hwell_median = median(hwell),
+#            hcell_median = median(hcell)),
+#       by=Totim]
+# 
+# wells$WELLID <- as.numeric(gsub("WELL", "", wells$WELLID))
+# 
+# 
+# 
+# 
+# setkey(wells,Totim)
+# system.time(wells[,list(Q-node_median=median(Q-node),
+#                         hwell_median = median(hwell),
+#                         hcell_median = median(hcell)),
+#                   by=Totim])
+# 
+# 
+# well1 <- wells[WELLID == "WELL1", ]
+# }
 

@@ -13,17 +13,17 @@ nlay = 3
 grid_spacing = 50
 delr = grid_spacing
 delc = grid_spacing
-delv = np.array([40, 20, 20], dtype=np.float32)
+delv = np.array([45, 15, 20], dtype=np.float32)
 nrow = int(Ly / delr)
 ncol = int(Lx / delc)
 botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
 hk = np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([2e-6*3600*24, 5e-9*3600*24, 3e-6*3600*24], #vertical conductivity
+vka =  np.array([2e-6*3600*24, 1e-8*3600*24, 3e-6*3600*24], #vertical conductivity
                 dtype=np.float32)
 sy = np.array([0.123, 0.023, 0.123], #specific yield
               dtype=np.float32)
-ss = np.array([1.e-3, 1.e-3, 1.e-3], #specific storage
+ss = np.array([1.e-4, 1.e-4, 1.e-4], #specific storage
               dtype=np.float32)
 laytyp = np.int_([1, 1, 1]) # 1 - ungespannt, 0 - gespannt
 
@@ -366,7 +366,7 @@ for iplot, time in enumerate(times):
 #    mfc = 'None'
 #    if (iplot+1) == len(times):
     mfc='black'
-    plt.plot(2050,4950, 
+    plt.plot(2050,450, 
                  lw=0, 
                  marker='o', 
                  markersize=3, 
@@ -441,29 +441,51 @@ plt.show()
 
 ###Plot the head versus time
 
-### Import measured observation point
-
-obs_measured  = np.loadtxt('obs_head_time.csv', 
+### Import measured observation point 1
+obs_measured1  = np.loadtxt('obs_head_time.csv', 
                            delimiter=",",
                            skiprows = 1)
 
-### User defined observation point in format: layer, x, y-coordinate (absolute)
-obsPoint = [plot_layer, 2050, 450]
+## User defined observation point in format: layer, x, y-coordinate (absolute)
+obsPoint1 = [plot_layer, 2050, 450]
 
-#### Convert observation point to layer, column, row format
-idx = (obsPoint[0], 
-       round(obsPoint[2]/delr,0), 
-       round(obsPoint[1]/delc,0))
-ts = headobj.get_ts(idx)
+## Convert observation point to layer, column, row format
+idx1 = (obsPoint1[0], 
+       round(obsPoint1[2]/delr,0), 
+       round(obsPoint1[1]/delc,0))
+ts = headobj.get_ts(idx1)
 plt.subplot(1, 1, 1)
-ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint[0] + 1, obsPoint[1], obsPoint[2])
+ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
 plt.title(ttl)
 plt.xlabel('time in days')
 plt.ylabel('head in m')
 plt.plot(ts[:, 0], ts[:, 1], label='simulated')
-plt.plot(obs_measured[:, 0], obs_measured[:, 1], color="red", label='measured (814193)')
+plt.plot(obs_measured1[:, 0], obs_measured1[:, 1], color="red", label='measured (814193)')
 plt.legend()
 plt.show()
+
+#### Import measured observation point 2
+#obs_measured2  = np.loadtxt('obs_head_time2.csv', 
+#                           delimiter=",",
+#                           skiprows = 1)
+#
+### User defined observation point in format: layer, x, y-coordinate (absolute)
+#obsPoint2 = [plot_layer, 2050, 450]
+#
+### Convert observation point to layer, column, row format
+#idx2 = (obsPoint2[0], 
+#       round(obsPoint2[2]/delr,0), 
+#       round(obsPoint2[1]/delc,0))
+#ts = headobj.get_ts(idx2)
+#plt.subplot(1, 1, 1)
+#ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint2[0] + 1, obsPoint2[1], obsPoint2[2])
+#plt.title(ttl)
+#plt.xlabel('time in days')
+#plt.ylabel('head in m')
+#plt.plot(ts[:, 0], ts[:, 1], label='simulated')
+#plt.plot(obs_measured2[:, 0], obs_measured2[:, 1], color="red", label='measured (814193)')
+#plt.legend()
+#plt.show()
 
 mf_list = flopy.utils.MfListBudget(modelname+".list")
 budget = mf_list.get_budget()

@@ -67,7 +67,7 @@ L_y <- 5400
 
 wells_nodes <- wells_nodes %>% 
               mutate(x = x + (L_x - max(x)) - 200, ### 200 m Abstand vom rechten Rand
-                     y = y + (L_y - max(y))/2) ### gleicher  Abstand von oberer/unterer Rand
+                     y = max(y)-y + (L_y - max(y))/2) ### gleicher  Abstand von oberer/unterer Rand
 
 write.csv(wells_nodes, 
           "wells_nodes.csv",
@@ -97,7 +97,7 @@ wells_time_dummy(wells_nodes)
 
 wells_times <- entnahme_pro_jahr_und_brunnen %>% 
   left_join(wells_nodes %>% select(Brkenn, wellid)) %>% 
-  mutate(per = 1+Year-min(Year), 
+  mutate(per = 1+Year-min(entnahme_pro_jahr_und_brunnen$Year), 
          qdes = -Q_perYear/365) %>%  
   ungroup() %>% 
   select(per,wellid, qdes) %>% 
