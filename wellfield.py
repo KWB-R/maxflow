@@ -7,13 +7,13 @@ import math
 # Model domain and grid definition
 Ly = 5400.
 Lx = 4000.
-ztop = 80.
+ztop = 200.
 zbot = 0.
 nlay = 3
 grid_spacing = 50
 delr = grid_spacing
 delc = grid_spacing
-delv = np.array([45, 15, 20], dtype=np.float32)
+delv = np.array([160, 20, 20], dtype=np.float32)
 nrow = int(Ly / delr)
 ncol = int(Lx / delc)
 botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
@@ -25,7 +25,7 @@ sy = np.array([0.123, 0.023, 0.123], #specific yield
               dtype=np.float32)
 ss = np.array([1.e-4, 1.e-4, 1.e-4], #specific storage
               dtype=np.float32)
-laytyp = np.int_([1, 1, 1]) # 1 - ungespannt, 0 - gespannt
+laytyp = np.int_([1, 0, 0]) # 1 - ungespannt, 0 - gespannt
 
 #plot_layer = nlay-1
 
@@ -34,12 +34,12 @@ laytyp = np.int_([1, 1, 1]) # 1 - ungespannt, 0 - gespannt
 ibound = np.ones((nlay, nrow, ncol), dtype=np.int32)
 ibound[:, :, 0] = -1
 ibound[:, :, -1] = 1
-
+ibound[0, 0, :] = -1
 
 #starting heads
-iniHead = 80.
+iniHead= 80
 strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
-
+strt[0, :, :] = 136
 
 def vonNeumann_max_dt(transmiss ,
                       s,
@@ -57,12 +57,12 @@ max_dt = min(vonNeumann_max_dt(transmiss = hk*delv,
 print('Setting time step to:', str(max_dt), '(days) for all stress periods')
 
 ### Desired total simulation time
-totsim = 9*365+1
+totsim = 5*365
 
 
 # Time step parameters
-nper = 10 #number of stress periods
-steady = [True, False, False, False, False, False, False, False, False, False] #type of sress period
+nper = 5 #number of stress periods
+steady = [False, False, False, False, False] #type of sress period
 
 t_perPeriod = (totsim-1)/(nper-1) # totsim - 1 (-1 because steady state time period = 1day)
 #perlen = [1, 122, 122, 122, 122, 122, 122, 122, 122] #length of a stress period
@@ -442,26 +442,35 @@ plt.show()
 ###Plot the head versus time
 
 ### Import measured observation point 1
-obs_measured1  = np.loadtxt('obs_head_time.csv', 
+obs_measured1  = np.loadtxt('obs_head_time_814193.csv', 
                            delimiter=",",
                            skiprows = 1)
-
+obs_measured1_1  = np.loadtxt('obs_head_time_814192.csv', 
+                           delimiter=",",
+                           skiprows = 1)
 ## User defined observation point in format: layer, x, y-coordinate (absolute)
 obsPoint1 = [plot_layer, 2050, 450]
+obsPoint1_1 = [0, 2050, 450]
 
 ## Convert observation point to layer, column, row format
 idx1 = (obsPoint1[0], 
        round(obsPoint1[2]/delr,0), 
        round(obsPoint1[1]/delc,0))
+idx1_1 = (obsPoint1_1[0], 
+       round(obsPoint1_1[2]/delr,0), 
+       round(obsPoint1_1[1]/delc,0))
 ts = headobj.get_ts(idx1)
+ts_1 = headobj.get_ts(idx1_1)
 plt.subplot(1, 1, 1)
 ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
 plt.title(ttl)
 plt.xlabel('time in days')
 plt.ylabel('head in m')
-plt.plot(ts[:, 0], ts[:, 1], label='simulated')
-plt.plot(obs_measured1[:, 0], obs_measured1[:, 1], color="red", label='measured (814193)')
-plt.legend()
+plt.plot(ts[:, 0], ts[:, 1], color="blue", label='simulated 6B')
+plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='simulated 6D')
+plt.plot(obs_measured1[:, 0], obs_measured1[:, 1], color="blue", ls=':', label='measured (814193)')
+plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1], color="red", ls=':', label='measured (814192)')
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.show()
 
 #### Import measured observation point 2
