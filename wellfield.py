@@ -19,7 +19,7 @@ ncol = int(Lx / delc)
 botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
 hk = np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([2e-6*3600*24, 1e-8*3600*24, 3e-6*3600*24], #vertical conductivity
+vka =  np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #vertical conductivity
                 dtype=np.float32)
 sy = np.array([0.123, 0.023, 0.123], #specific yield
               dtype=np.float32)
@@ -32,14 +32,15 @@ laytyp = np.int_([1, 0, 0]) # 1 - ungespannt, 0 - gespannt
 # Variables for the BAS package
 # Note that changes from the previous tutorial!
 ibound = np.ones((nlay, nrow, ncol), dtype=np.int32)
-ibound[:, :, 0] = -1
+ibound[2, :, 0] = -1
 ibound[:, :, -1] = 1
-ibound[0, 0, :] = -1
+ibound[0, :, :] = -1
+#ibound[0, 0, 20] = -1
 
 #starting heads
-iniHead= 80
+iniHead= 110
 strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
-strt[0, :, :] = 136
+#strt[0, :, :] = 130
 
 def vonNeumann_max_dt(transmiss ,
                       s,
@@ -57,12 +58,12 @@ max_dt = min(vonNeumann_max_dt(transmiss = hk*delv,
 print('Setting time step to:', str(max_dt), '(days) for all stress periods')
 
 ### Desired total simulation time
-totsim = 5*365
+totsim = 9*365+1
 
 
 # Time step parameters
-nper = 5 #number of stress periods
-steady = [False, False, False, False, False] #type of sress period
+nper = 10 #number of stress periods
+steady = [False, False, False, False, False, False, False, False, False, False] #type of sress period
 
 t_perPeriod = (totsim-1)/(nper-1) # totsim - 1 (-1 because steady state time period = 1day)
 #perlen = [1, 122, 122, 122, 122, 122, 122, 122, 122] #length of a stress period
@@ -261,7 +262,7 @@ output_features = ['save head',
                              
                                
 ocdict = {}
-for sper in range(0,nper-1):
+for sper in range(0,nper):
     if  steady[sper]==False:
         key = (sper, nstp[sper]-1)
         ocdict[key] = output_features
@@ -366,7 +367,7 @@ for iplot, time in enumerate(times):
 #    mfc = 'None'
 #    if (iplot+1) == len(times):
     mfc='black'
-    plt.plot(2050,450, 
+    plt.plot(2050,4950, 
                  lw=0, 
                  marker='o', 
                  markersize=3, 
@@ -376,7 +377,7 @@ for iplot, time in enumerate(times):
                  zorder=9)
     if 'mnw2' in locals():
         print("Using MNW2 package and plotting active wells")
-        mnw_wells = wells_info[wells_info['per'] == str_per-1] 
+        mnw_wells = wells_info[wells_info['per'] == str_per] 
         plt.plot(mnw_wells['j']*delc, 
                  Ly-(mnw_wells['i']*delr), 
                  lw=0, 
@@ -417,6 +418,22 @@ contour_set = modelmap.plot_array(head[plot_layer,:,:],
 linecollection = modelmap.plot_grid()
 cb = plt.colorbar(contour_set, shrink=0.4)
 plt.plot(2050,4950, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
+plt.plot(2650,3250, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
+plt.plot(3900,270, 
                  lw=0, 
                  marker='o', 
                  markersize=3, 
@@ -471,31 +488,58 @@ plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='simulated 6D')
 plt.plot(obs_measured1[:, 0], obs_measured1[:, 1], color="blue", ls=':', label='measured (814193)')
 plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1], color="red", ls=':', label='measured (814192)')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.axis([0, 3500, 0, 160])
 plt.show()
 
-#### Import measured observation point 2
-#obs_measured2  = np.loadtxt('obs_head_time2.csv', 
-#                           delimiter=",",
-#                           skiprows = 1)
-#
-### User defined observation point in format: layer, x, y-coordinate (absolute)
-#obsPoint2 = [plot_layer, 2050, 450]
-#
-### Convert observation point to layer, column, row format
-#idx2 = (obsPoint2[0], 
-#       round(obsPoint2[2]/delr,0), 
-#       round(obsPoint2[1]/delc,0))
-#ts = headobj.get_ts(idx2)
-#plt.subplot(1, 1, 1)
-#ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint2[0] + 1, obsPoint2[1], obsPoint2[2])
-#plt.title(ttl)
-#plt.xlabel('time in days')
-#plt.ylabel('head in m')
-#plt.plot(ts[:, 0], ts[:, 1], label='simulated')
-#plt.plot(obs_measured2[:, 0], obs_measured2[:, 1], color="red", label='measured (814193)')
-#plt.legend()
-#plt.show()
+### Import measured observation point 2
+obs_measured_502612  = np.loadtxt('obs_head_time_502612.csv', 
+                           delimiter=",",
+                           skiprows = 1)
 
+## User defined observation point in format: layer, x, y-coordinate (absolute)
+obsPoint_502612 = [plot_layer, 2650, 2230]
+
+## Convert observation point to layer, column, row format
+idx2 = (obsPoint_502612[0], 
+       round(obsPoint_502612[2]/delr,0), 
+       round(obsPoint_502612[1]/delc,0))
+ts = headobj.get_ts(idx2)
+plt.subplot(1, 1, 1)
+ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint_502612[0] + 1, obsPoint_502612[1], obsPoint_502612[2])
+plt.title(ttl)
+plt.xlabel('time in days')
+plt.ylabel('head in m')
+plt.plot(ts[:, 0], ts[:, 1], label='simulated')
+plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1], color="red", label='measured (502612)')
+plt.legend()
+plt.axis([0, 3500, 0, 160])
+plt.show()
+
+### Import measured observation point 3
+obs_measured_502442  = np.loadtxt('obs_head_time_502442.csv', 
+                           delimiter=",",
+                           skiprows = 1)
+
+## User defined observation point in format: layer, x, y-coordinate (absolute)
+obsPoint_502442 = [plot_layer, 3900, 5230]
+
+## Convert observation point to layer, column, row format
+idx2 = (obsPoint_502442[0], 
+       round(obsPoint_502442[2]/delr,0), 
+       round(obsPoint_502442[1]/delc,0))
+ts = headobj.get_ts(idx2)
+plt.subplot(1, 1, 1)
+ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint_502442[0] + 1, obsPoint_502442[1], obsPoint_502442[2])
+plt.title(ttl)
+plt.xlabel('time in days')
+plt.ylabel('head in m')
+plt.plot(ts[:, 0], ts[:, 1], label='simulated')
+plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1], color="red", label='measured (502442)')
+plt.legend()
+plt.axis([0, 3500, 0, 160])
+plt.show()
+
+#budget graphs
 mf_list = flopy.utils.MfListBudget(modelname+".list")
 budget = mf_list.get_budget()
 for stress_period in range(2,nper):
@@ -507,4 +551,20 @@ for stress_period in range(2,nper):
     plt.ylabel('m3')
     plt.show()
     
+budget_incremental, budget_cumulative = mf_list.get_dataframes(start_datetime='31-12-2006')
+
+plt.plot(budget_incremental["STORAGE_IN"].as_matrix()*perlen, label="In: storage")
+plt.plot(budget_incremental["CONSTANT_HEAD_IN"].as_matrix()*perlen, label="In: constant head")
+plt.plot(budget_incremental["MNW2_IN"].as_matrix()*perlen, label="In: MNW2")
+plt.plot(budget_incremental["STORAGE_OUT"].as_matrix()*perlen, label="Out: storage")
+plt.plot(budget_incremental["CONSTANT_HEAD_OUT"].as_matrix()*perlen, label="Out: constant head")
+plt.plot(budget_incremental["MNW2_OUT"].as_matrix()*perlen, label="Out: MNW2")
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.title('Wasserbilanz (in m3 pro Stressperiode)')
+plt.axis([0, 9, 0, 5e7])
+plt.show()
+
+plt.plot(budget_incremental["PERCENT_DISCREPANCY"].as_matrix())
+plt.title('Wasserbilanzfehler (in % pro Stressperiode)')
+plt.show()
     
