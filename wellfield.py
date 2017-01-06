@@ -34,7 +34,7 @@ laytyp = np.int_([1, 0, 0]) # 1 - ungespannt, 0 - gespannt
 ibound = np.ones((nlay, nrow, ncol), dtype=np.int32)
 ibound[2, :, 0] = -1
 ibound[:, :, -1] = 1
-ibound[0, :, :] = -1
+ibound[0, :, 0] = -1
 #ibound[0, 0, 20] = -1
 
 #starting heads
@@ -561,7 +561,7 @@ plt.plot(budget_incremental["CONSTANT_HEAD_OUT"].as_matrix()*perlen, label="Out:
 plt.plot(budget_incremental["MNW2_OUT"].as_matrix()*perlen, label="Out: MNW2")
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.title('Wasserbilanz (in m3 pro Stressperiode)')
-plt.axis([0, 9, 0, 5e7])
+#plt.axis([0, 9, 0, 5e7])
 plt.show()
 
 plt.plot(budget_incremental["PERCENT_DISCREPANCY"].as_matrix())

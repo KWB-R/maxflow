@@ -110,6 +110,7 @@ wells_times <- entnahme_pro_jahr_und_brunnen %>%
 wells_times <- wells_time_dummy(wells_nodes) %>% 
                left_join(wells_times, by = c("per", "wellid")) %>% 
                mutate(qdes = ifelse(is.na(qdes.y), qdes.x, qdes.y)) %>% 
+               mutate(qdes = ifelse(qdes != 0 , -1500, 0)) %>%  
                select(per, wellid, qdes) 
   
 
