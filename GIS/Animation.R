@@ -13,13 +13,15 @@ entnahme <- shapefiles::read.dbf(dbf.name = "W_Brunnen_bis2015.dbf")$dbf
 
 
 
+
 entnahme_pro_jahr_und_brunnen <- entnahme %>% 
   select(Iz, Qbr, Brgwl, Brkenn, X_WERT, Y_WERT) %>% 
   mutate(Year = Iz + 1970, 
          daysPerYear = lubridate::yday(as.Date(sprintf("%s-12-31", Year, format="%Y-%m-%d"))),
          Q_perYear = Qbr*60*24*daysPerYear, 
-         Randbrunnen = stringr::str_detect(string = entnahme$Brkenn,pattern = "T  WR|T  WS")) %>%  
-  filter(Brgwl == "xx0987xxxxxx", 
+         Randbrunnen = stringr::str_detect(string = entnahme$Brkenn,pattern = "T  WR|T  WS"), 
+         Bru_in_6B = stringr::str_detect(string = entnahme$Brgwl,"xx0.*")) %>%  
+  filter(Bru_in_6B == TRUE, 
          Randbrunnen == FALSE,
          X_WERT < 2532000,
          X_WERT >= 2528500,

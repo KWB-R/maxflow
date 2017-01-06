@@ -13,8 +13,9 @@ entnahme_pro_jahr_und_brunnen <- entnahme %>%
   mutate(Year = Iz + 1970, 
          daysPerYear = lubridate::yday(as.Date(sprintf("%s-12-31", Year, format="%Y-%m-%d"))),
          Q_perYear = Qbr*60*24*daysPerYear, 
-         Randbrunnen = stringr::str_detect(string = entnahme$Brkenn,pattern = "T  WR|T  WS")) %>%  
-  filter(Brgwl == "xx0987xxxxxx", 
+         Randbrunnen = stringr::str_detect(string = entnahme$Brkenn,pattern = "T  WR|T  WS"), 
+         Bru_in_6B = stringr::str_detect(string = entnahme$Brgwl,"xx0.*")) %>%  
+  filter(Bru_in_6B == TRUE, 
          Randbrunnen == FALSE,
          X_WERT < 2532000,
          X_WERT >= 2528500,
@@ -37,6 +38,7 @@ entnahme_pro_jahr <- entnahme_pro_jahr_und_brunnen %>%
 entnahme_pro_jahr_und_brunnen <- entnahme_pro_jahr_und_brunnen %>% 
   left_join(entnahme_pro_jahr)
 
+entnahme_pro_jahr_und_brunnen %>%  ungroup() %>% group_by(Year) %>%  summarise(n = n())
 
 
 
@@ -114,3 +116,17 @@ wells_times <- wells_time_dummy(wells_nodes) %>%
 write.csv(wells_times, 
           "wells_times.csv",
           row.names = FALSE)
+
+wells_nodes %>%
+  mutate(k = 2, 
+         i = y, 
+         j = x) %>% 
+  select(wellid, k, i, j) %>%
+  left_join(wells_times %>% 
+              mutate(flux = qdes) %>% 
+              select(per, wellid, flux)) %>% 
+  filter(flux < 0) %>% 
+  arrange(per, wellid) %>% 
+  select(per, k, i, j, flux) %>% 
+  write.csv("wellpackage.csv",
+            row.names = FALSE)
