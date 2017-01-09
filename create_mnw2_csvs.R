@@ -13,8 +13,9 @@ entnahme_pro_jahr_und_brunnen <- entnahme %>%
   mutate(Year = Iz + 1970, 
          daysPerYear = lubridate::yday(as.Date(sprintf("%s-12-31", Year, format="%Y-%m-%d"))),
          Q_perYear = Qbr*60*24*daysPerYear, 
-         Randbrunnen = stringr::str_detect(string = entnahme$Brkenn,pattern = "T  WR|T  WS")) %>%  
-  filter(Brgwl == "xx0987xxxxxx", 
+         Randbrunnen = stringr::str_detect(string = entnahme$Brkenn,pattern = "T  WR|T  WS"), 
+         Bru_in_6B = stringr::str_detect(string = entnahme$Brgwl,"xx0.*")) %>%  
+  filter(Bru_in_6B == TRUE, 
          Randbrunnen == FALSE,
          X_WERT < 2532000,
          X_WERT >= 2528500,
@@ -23,6 +24,7 @@ entnahme_pro_jahr_und_brunnen <- entnahme %>%
          Year >= 2007) %>% 
   group_by(Brkenn, X_WERT, Y_WERT,Year) %>%  
   summarise(Q_perYear=-sum(Q_perYear)) 
+
 
 
 entnahme_pro_jahr <- entnahme_pro_jahr_und_brunnen %>% 
@@ -37,6 +39,7 @@ entnahme_pro_jahr <- entnahme_pro_jahr_und_brunnen %>%
 entnahme_pro_jahr_und_brunnen <- entnahme_pro_jahr_und_brunnen %>% 
   left_join(entnahme_pro_jahr)
 
+entnahme_pro_jahr_und_brunnen %>%  ungroup() %>% group_by(Year) %>%  summarise(n = n())
 
 
 
@@ -67,7 +70,45 @@ L_y <- 5400
 
 wells_nodes <- wells_nodes %>% 
               mutate(x = x + (L_x - max(x)) - 200, ### 200 m Abstand vom rechten Rand
-                     y = y + (L_y - max(y))/2) ### gleicher  Abstand von oberer/unterer Rand
+                     y = max(y)-y + (L_y - max(y))/2) ### gleicher  Abstand von oberer/unterer Rand
+
+
+
+
+
+
+wells_nodes <- wells_nodes[seq(1,nrow(wells_nodes),9),]
+
+
+# options(stringsAsFactors = FALSE)
+# 
+# distanceMatrix <- round(dist(wells_nodes[,c("X_WERT","Y_WERT")],
+#                              method="euclidian", 
+#                              upper=TRUE),
+#                         1)
+# 
+# attr(distanceMatrix, "Labels") <- wells_nodes$wellid
+# 
+# 
+# library(reshape)
+# 
+# df  <- melt(as.matrix(distanceMatrix)) #Converting the dist object to matrix while using melt
+# 
+# p    <- t(apply(df[,c(1,2)],1,FUN=sort))
+# rmv1 <- which(p[,1] == p[,2])
+# 
+# p    <- paste(p[,1],p[,2],sep="|")
+# rmv2 <- which(duplicated(p))
+# 
+# distanceMatrix_list   <- df[-c(rmv1,rmv2),] #removing self distances and duplicated distances
+# 
+# 
+# critDist <- 100
+# condition <- distanceMatrix_list$value < critDist
+# 
+# length(unique(c(as.character(distanceMatrix_list$X2[condition]), as.character(distanceMatrix_list$X1[condition]))))
+
+
 
 write.csv(wells_nodes, 
           "wells_nodes.csv",
@@ -96,8 +137,8 @@ wells_time_dummy(wells_nodes)
 
 
 wells_times <- entnahme_pro_jahr_und_brunnen %>% 
-  left_join(wells_nodes %>% select(Brkenn, wellid)) %>% 
-  mutate(per = 1+Year-min(Year), 
+  right_join(wells_nodes %>% select(Brkenn, wellid)) %>% 
+  mutate(per = 1+Year-min(entnahme_pro_jahr_und_brunnen$Year), 
          qdes = -Q_perYear/365) %>%  
   ungroup() %>% 
   select(per,wellid, qdes) %>% 
@@ -108,9 +149,24 @@ wells_times <- entnahme_pro_jahr_und_brunnen %>%
 wells_times <- wells_time_dummy(wells_nodes) %>% 
                left_join(wells_times, by = c("per", "wellid")) %>% 
                mutate(qdes = ifelse(is.na(qdes.y), qdes.x, qdes.y)) %>% 
+               mutate(qdes = ifelse(qdes != 0 , -1500, 0)) %>%  
                select(per, wellid, qdes) 
   
 
 write.csv(wells_times, 
           "wells_times.csv",
           row.names = FALSE)
+
+wells_nodes %>%
+  mutate(k = 2, 
+         i = y, 
+         j = x) %>% 
+  select(wellid, k, i, j) %>%
+  left_join(wells_times %>% 
+              mutate(flux = qdes) %>% 
+              select(per, wellid, flux)) %>% 
+  filter(flux < 0) %>% 
+  arrange(per, wellid) %>% 
+  select(per, k, i, j, flux) %>% 
+  write.csv("wellpackage.csv",
+            row.names = FALSE)
