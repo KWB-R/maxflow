@@ -2,10 +2,10 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 library(lattice)
-setwd("C:/Users/mrustl/Desktop/WC_Maxflow/branches/3-layer_real_wells")
+#setwd("C:/Users/mrustl/Desktop/WC_Maxflow/branches/3-layer_reduced_wells")
 
-wells <- data.table::fread(input = "wellfield.byn",sep = "")
-wells <- data.table::fread(input = "wellfield.csv", sep = ",")
+wells <- data.table::fread(input = "wellfield.byn", fill = TRUE)
+
 names(wells) <- c("WELLID", "NODE", "Lay", "Row", "Col", "Totim", "Q_node", "hwell", "hcell", "seepage")
 
 wells <- wells[,c("NODE", "Lay", "Row", "Col") := NULL]
@@ -24,6 +24,21 @@ wells_perDay <- wells %>%
          summarise(Q_node_median = median(Q_node), 
                    hwell_median = median(hwell), 
                    hcell_median = median(hcell))
+
+
+wells_summary <- wells_perDay %>% 
+  ungroup() %>% 
+  group_by(WELLID) %>%  
+  filter(Q_node_median < 0) %>%
+  summarise(Q_node_median = -median(Q_node_median), 
+            days_active = n()) %>% 
+  arrange(Q_node_median, desc(days_active))
+
+wells_summary %>%  
+  ggplot(aes(x = days_active, y = Q_node_median/24/60)) + 
+  geom_point(alpha = 0.5, size = 2) + 
+  labs(y = "Foerderrate pro Minute (m3/min)") +
+  theme_bw()
 
 # Q sum per well for whole simulation
 wells_perDay %>% 
