@@ -575,4 +575,17 @@ plt.show()
 plt.plot(budget_incremental["PERCENT_DISCREPANCY"].as_matrix())
 plt.title('Wasserbilanzfehler (in % pro Stressperiode)')
 plt.show()
-    
+
+### ModelCrossSection
+#fig = plt.figure(figsize=(8, 6))
+#ax = fig.add_subplot(1, 1, 1)
+#ax.set_title('contour_array() and plot_surface()')
+modelxsect = flopy.plot.ModelCrossSection(model=mf, line={'Row': 9})
+#ct = modelxsect.contour_array(head, masked_values=[999.], head=head, levels=levels)
+patches = modelxsect.plot_ibound(head=head)
+wt = modelxsect.plot_surface(head, masked_values=[999.], color='blue', lw=1)
+linecollection = modelxsect.plot_grid()
+plt.title('Profilschnitt in O-W-Richtung mit Grundwasserständen')
+plt.ylabel('m')
+plt.xlabel('m')
+#t = ax.set_title('Column 6 Cross-Section - Model Grid')
