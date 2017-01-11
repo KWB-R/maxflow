@@ -2,7 +2,7 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 library(lattice)
-#setwd("C:/Users/mrustl/Desktop/WC_Maxflow/branches/3-nat_layer_real_wells")
+setwd("C:/Users/mrustl/Desktop/WC_Maxflow/branches/3-nat_layer_real_wells")
 
 wells <- data.table::fread(input = "wellfield.byn", fill = TRUE)
 

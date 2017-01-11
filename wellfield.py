@@ -482,6 +482,55 @@ if 'mnw2' in locals():
 plt.show()
 
 
+mytitle = 'Head above layer ' + str(plot_layer) + ' bottom elevation after '+ str(time) + ' days of simulation'
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(1, 1, 1, aspect='equal')
+title = ax.set_title(mytitle)
+modelmap = flopy.plot.ModelMap(model=mf, rotation=0)
+quadmesh = modelmap.plot_ibound()
+contour_set = modelmap.plot_array(head[plot_layer,:,:]-botm[plot_layer], 
+                                  masked_values=[-1e+30], 
+                                  alpha=0.5)
+linecollection = modelmap.plot_grid()
+cb = plt.colorbar(contour_set, shrink=0.4)
+plt.plot(2050,4950, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
+plt.plot(2650,3250, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
+plt.plot(3900,270, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
+if 'mnw2' in locals():
+        print("Using MNW2 package and plotting active wells")
+        mnw_wells = wells_info[wells_info['per'] == str_per-1] 
+        plt.plot(mnw_wells['j']*delc, 
+                 Ly-(mnw_wells['i']*delr), 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='black', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
+plt.show()
+
 ###Plot the head versus time
 
 ### Import measured observation point 1
@@ -502,8 +551,8 @@ idx1 = (obsPoint1[0],
 idx1_1 = (obsPoint1_1[0], 
        round(obsPoint1_1[2]/delr,0), 
        round(obsPoint1_1[1]/delc,0))
-ts = headobj.get_ts(idx1)
-ts_1 = headobj.get_ts(idx1_1)
+ts = headobj.get_ts(idx1) 
+ts_1 = headobj.get_ts(idx1_1) 
 plt.subplot(1, 1, 1)
 ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
 plt.title(ttl)
@@ -511,8 +560,8 @@ plt.xlabel('time in days')
 plt.ylabel('head in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='simulated 6B')
 plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='simulated 6D')
-plt.plot(obs_measured1[:, 0], obs_measured1[:, 1], color="blue", ls=':', label='measured (814193)')
-plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1], color="red", ls=':', label='measured (814192)')
+plt.plot(obs_measured1[:, 0], obs_measured1[:, 1] + botm[nlay-1,int(idx1[1]),int(idx1[2])], color="blue", ls=':', label='measured (814193)')
+plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='measured (814192)')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
 plt.show()
@@ -529,14 +578,14 @@ obsPoint_502612 = [plot_layer, 2650, 2230]
 idx2 = (obsPoint_502612[0], 
        round(obsPoint_502612[2]/delr,0), 
        round(obsPoint_502612[1]/delc,0))
-ts = headobj.get_ts(idx2)
+ts = headobj.get_ts(idx2) 
 plt.subplot(1, 1, 1)
 ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint_502612[0] + 1, obsPoint_502612[1], obsPoint_502612[2])
 plt.title(ttl)
 plt.xlabel('time in days')
 plt.ylabel('head in m')
 plt.plot(ts[:, 0], ts[:, 1], label='simulated')
-plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1], color="red", label='measured (502612)')
+plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], color="red", label='measured (502612)')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
 plt.show()
@@ -560,7 +609,7 @@ plt.title(ttl)
 plt.xlabel('time in days')
 plt.ylabel('head in m')
 plt.plot(ts[:, 0], ts[:, 1], label='simulated')
-plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1], color="red", label='measured (502442)')
+plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], color="red", label='measured (502442)')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
 plt.show()
@@ -594,18 +643,36 @@ plt.plot(budget_incremental["PERCENT_DISCREPANCY"].as_matrix())
 plt.title('Wasserbilanzfehler (in % pro Stressperiode)')
 plt.show()
 
+
 ### ModelCrossSection
 #fig = plt.figure(figsize=(8, 6))
 #ax = fig.add_subplot(1, 1, 1)
 #ax.set_title('contour_array() and plot_surface()')
-modelysect = flopy.plot.ModelCrossSection(model=mf, line={'column': 40})
+modelxsect = flopy.plot.ModelCrossSection(model=mf, line={'row': 105})
+#ct = modelxsect.contour_array(head, masked_values=[999.], head=head, levels=levels)
+patches = modelxsect.plot_ibound(head=head)
+wt = modelxsect.plot_surface(head, masked_values=[999.], color='blue', lw=1)
+linecollection = modelxsect.plot_grid()
+plt.title('Profilschnitt in W-O-Richtung mit Grundwasserständen')
+plt.ylabel('m')
+plt.xlabel('m')
+plt.axis([0, 4000, 0, 200])
+plt.show()
+#t = ax.set_title('Column 6 Cross-Section - Model Grid')
+
+### ModelCrossSection
+#fig = plt.figure(figsize=(8, 6))
+#ax = fig.add_subplot(1, 1, 1)
+#ax.set_title('contour_array() and plot_surface()')
+modelysect = flopy.plot.ModelCrossSection(model=mf, line={'column': 30})
 #ct = modelxsect.contour_array(head, masked_values=[999.], head=head, levels=levels)
 patches = modelysect.plot_ibound(head=head)
 wt = modelysect.plot_surface(head, masked_values=[999.], color='blue', lw=1)
 linecollection = modelysect.plot_grid()
-plt.title('Profilschnitt in O-W-Richtung mit Grundwasserständen')
+plt.title('Profilschnitt in N-S-Richtung mit Grundwasserständen')
 plt.ylabel('m')
 plt.xlabel('m')
 plt.axis([0, 5400, 0, 200])
+plt.show()
 #t = ax.set_title('Column 6 Cross-Section - Model Grid')
     
