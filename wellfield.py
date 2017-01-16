@@ -651,6 +651,24 @@ plt.xticks(data ['index'])
 plt.savefig('budget.png', dpi=300)
 plt.show()
 
+###pump graph
+### Import measured pump data
+pumping_calculated_6B  = np.loadtxt('pump data.csv', 
+                           delimiter=",",
+                           skiprows = 1,
+                           usecols = (0,3))
+
+plt.bar(data ['index'], budget_incremental["MNW2_OUT"].as_matrix()*perlen, bar_width, label="Out: Modell")
+plt.bar(pumping_calculated_6B [:,0]+bar_width, pumping_calculated_6B [:,1], bar_width, color='r', label="Out: BIOS")
+plt.legend(bbox_to_anchor=(0.42, 0.9), bbox_transform=plt.gcf().transFigure)
+plt.title('Entnahme aus 6B (in m3 pro Jahr)')
+plt.axis([0, 10, 0, 1.8e7])
+plt.ylabel('m3')
+plt.xlabel('Stressperiode')
+plt.xticks(data ['index'])
+#plt.savefig('budget.png', dpi=300)
+plt.show()
+
 ### ModelCrossSection
 #fig = plt.figure(figsize=(8, 6))
 #ax = fig.add_subplot(1, 1, 1)
