@@ -3,6 +3,7 @@ import flopy
 import os
 import pandas as pd
 import math
+from get_layerBudget import *
 
 # Model domain and grid definition
 Ly = 5400.
@@ -286,14 +287,23 @@ mnw2.write_file(modelname + ".mnw2")
 output_features = ['save head', 
                    'save budget']
                              
-                               
+each_time_step = True ### if True (for all time steps), if False only for last time 
+#for each stress period 
+                   
 ocdict = {}
 for sper in range(0,nper):
     if  steady[sper]==False:
-        key = (sper, nstp[sper]-1)
-        ocdict[key] = output_features
-        key = (sper+1, 0)  
-        ocdict[key] = [] 
+        if each_time_step == True:
+            for time_step in np.arange(0, nstp[sper], 1):
+                key = (sper, time_step)
+                ocdict[key] = output_features
+                key = (sper+1, 0)  
+                ocdict[key] = []  
+        else:
+            key = (sper, nstp[sper]-1)
+            ocdict[key] = output_features
+            key = (sper+1, 0)  
+            ocdict[key] = []  
     else:
         key = (sper, 0)
         ocdict[key] = output_features
@@ -340,6 +350,73 @@ import flopy.utils.binaryfile as bf
 headobj = bf.HeadFile(modelname+'.hds')
 times = headobj.get_times()
 cbb = bf.CellBudgetFile(modelname+'.cbc')
+
+
+### Get layer based budget for each time step
+layer_budget = get_layerbudget("wellfield", 
+                               nper, 
+                               perlen, 
+                               nlay, 
+                               debug = True)
+
+
+### Aggregate budget for layer for whole simulation
+layer_budget_perLayer = layer_budget.groupby(['layer']).sum().reset_index()
+
+### Aggregate budget for stress period & layer
+layer_budget_perStressPeriod = layer_budget.groupby(['layer', 'stress_period']).sum().reset_index()
+
+
+### Filter only lowest layer
+layer3_budget_perStressPeriod = layer_budget_perStressPeriod[layer_budget_perStressPeriod['layer'] == 2]
+
+mf_list = flopy.utils.MfListBudget(modelname+".list")
+budget_incremental, budget_cumulative = mf_list.get_dataframes(start_datetime='31-12-2006')
+
+layer3_budget_perStressPeriod['MNW2_IN'] = np.append(budget_cumulative['MNW2_IN'][0],
+                                                    budget_cumulative['MNW2_IN'].diff().as_matrix()[1:])
+
+layer3_budget_perStressPeriod['MNW2_OUT'] = np.append(budget_cumulative['MNW2_OUT'][0],
+                                                    budget_cumulative['MNW2_OUT'].diff().as_matrix()[1:])
+
+
+layer3_budget_perStressPeriod['LEAKAGE_FROM_LAYER2'] = layer_budget_perStressPeriod[layer_budget_perStressPeriod['layer'] == 1]['FLOW_LOWER_FACE'].as_matrix()
+ 
+
+bar_width = 0.35
+plt.bar(layer3_budget_perStressPeriod['stress_period'], layer3_budget_perStressPeriod['MNW2_OUT'], bar_width, label="Out: Brunnen")
+plt.bar(layer3_budget_perStressPeriod['stress_period'], 
+        layer3_budget_perStressPeriod['CONSTANT_HEAD_OUT'], 
+        bar_width, 
+        color= 'green', 
+        label="Out: Rand", 
+        bottom=layer3_budget_perStressPeriod['MNW2_OUT'])
+plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width,  
+        layer3_budget_perStressPeriod['STORAGE_IN'], 
+        bar_width, 
+        color='r', 
+        label="In: Vorrat")
+plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width, 
+        layer3_budget_perStressPeriod['CONSTANT_HEAD_IN'], 
+        bar_width,
+        color= 'orange', 
+        label="In: Rand", 
+        bottom=layer3_budget_perStressPeriod['STORAGE_IN'])
+plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width, 
+        layer3_budget_perStressPeriod['LEAKAGE_FROM_LAYER2'],
+        bar_width,
+        color= 'grey', 
+        label="In: Leakage (layer2)", 
+        bottom=layer3_budget_perStressPeriod['CONSTANT_HEAD_IN'])
+plt.legend(bbox_to_anchor=(1.3, 0.7), bbox_transform=plt.gcf().transFigure)
+plt.title('Wasserbilanz Layer 3 (in m3 pro Stressperiode)')
+plt.axis([0, 10, 0, 1.8e7])
+plt.ylabel('m3')
+plt.xlabel('Stressperiode')
+plt.xticks(layer3_budget_perStressPeriod['stress_period'])
+plt.savefig('budget_layer3.png', dpi=300)
+plt.show()
+
 
 # Setup contour parameters
 levels = np.linspace(0, 80, 17)
