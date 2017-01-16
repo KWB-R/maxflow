@@ -17,7 +17,7 @@ delv = np.array([160, 20, 20], dtype=np.float32)
 nrow = int(Ly / delr)
 ncol = int(Lx / delc)
 
-
+###layer decline
 def set_layerbottom(botm_north, 
                     gradient_northSouth
                     ):
@@ -64,7 +64,7 @@ ibound[0, :, 0] = -1
 #starting heads
 iniHead= 110
 strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
-#strt[0, :, :] = 130
+strt[0, :, :] = 120
 
 def vonNeumann_max_dt(transmiss ,
                       s,
@@ -529,6 +529,7 @@ if 'mnw2' in locals():
                  markeredgecolor='black', 
                  markerfacecolor=mfc, 
                  zorder=9)
+plt.savefig('Restwasser.png', dpi=300)
 plt.show()
 
 ###Plot the head versus time
@@ -564,6 +565,7 @@ plt.plot(obs_measured1[:, 0], obs_measured1[:, 1] + botm[nlay-1,int(idx1[1]),int
 plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='measured (814192)')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
+plt.savefig('time_series_north.png', dpi=300)
 plt.show()
 
 ### Import measured observation point 2
@@ -588,6 +590,7 @@ plt.plot(ts[:, 0], ts[:, 1], label='simulated')
 plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], color="red", label='measured (502612)')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
+plt.savefig('time_series_centre.png', dpi=300)
 plt.show()
 
 ### Import measured observation point 3
@@ -612,6 +615,7 @@ plt.plot(ts[:, 0], ts[:, 1], label='simulated')
 plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], color="red", label='measured (502442)')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
+plt.savefig('time_series_south.png', dpi=300)
 plt.show()
 
 #budget graphs
@@ -620,35 +624,38 @@ budget = mf_list.get_budget()
 for stress_period in range(2,nper):
     timestep = nstp[stress_period-1]-1
     data = mf_list.get_data(kstpkper=(timestep,stress_period))
-    plt.title('water budget for ' + str(stress_period + 1) + ' stress period at ' + str(timestep + 1) + ". timestep\n")
+    plt.title('water budget after ' + str(stress_period + 1) + ' stress period at ' + str(timestep + 1) + ". timestep\n")
     plt.bar(data['index'], data['value'])
     plt.xticks(data['index'], data['name'], rotation=45, size=6)
     plt.ylabel('m3')
     plt.show()
     
 budget_incremental, budget_cumulative = mf_list.get_dataframes(start_datetime='31-12-2006')
-
-plt.plot(budget_incremental["STORAGE_IN"].as_matrix()*perlen, label="In: storage")
-plt.plot(budget_incremental["CONSTANT_HEAD_IN"].as_matrix()*perlen, label="In: constant head")
-plt.plot(budget_incremental["MNW2_IN"].as_matrix()*perlen, label="In: MNW2")
-plt.plot(budget_incremental["STORAGE_OUT"].as_matrix()*perlen, label="Out: storage")
-plt.plot(budget_incremental["CONSTANT_HEAD_OUT"].as_matrix()*perlen, label="Out: constant head")
-plt.plot(budget_incremental["MNW2_OUT"].as_matrix()*perlen, label="Out: MNW2")
-plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+#plt.plot(budget_incremental["STORAGE_IN"].as_matrix()*perlen, label="In: storage")
+#plt.plot(budget_incremental["CONSTANT_HEAD_IN"].as_matrix()*perlen, label="In: constant head")
+#plt.plot(budget_incremental["MNW2_IN"].as_matrix()*perlen, label="In: MNW2")
+#plt.plot(budget_incremental["STORAGE_OUT"].as_matrix()*perlen, label="Out: storage")
+#plt.plot(budget_incremental["CONSTANT_HEAD_OUT"].as_matrix()*perlen, label="Out: constant head")
+#plt.plot(budget_incremental["MNW2_OUT"].as_matrix()*perlen, label="Out: MNW2")
+bar_width = 0.35
+plt.bar(data ['index'], budget_incremental["MNW2_OUT"].as_matrix()*perlen, bar_width, label="Out: Brunnen")
+plt.bar(data ['index'], budget_incremental["CONSTANT_HEAD_OUT"].as_matrix()*perlen, bar_width, color= 'green', label="Out: Rand", bottom=budget_incremental["MNW2_OUT"].as_matrix()*perlen)
+plt.bar(data ['index'] + bar_width, budget_incremental["STORAGE_IN"].as_matrix()*perlen, bar_width, color='r', label="In: Vorrat")
+plt.bar(data ['index'] + bar_width, budget_incremental["CONSTANT_HEAD_IN"].as_matrix()*perlen, bar_width, color= 'orange', label="In: Rand", bottom=budget_incremental["STORAGE_IN"].as_matrix()*perlen)
+plt.legend(bbox_to_anchor=(0.5, 0.9), bbox_transform=plt.gcf().transFigure)
 plt.title('Wasserbilanz (in m3 pro Stressperiode)')
-#plt.axis([0, 9, 0, 5e7])
+plt.axis([0, 10, 0, 1.8e7])
+plt.ylabel('m3')
+plt.xlabel('Stressperiode')
+plt.xticks(data ['index'])
+plt.savefig('budget.png', dpi=300)
 plt.show()
-
-plt.plot(budget_incremental["PERCENT_DISCREPANCY"].as_matrix())
-plt.title('Wasserbilanzfehler (in % pro Stressperiode)')
-plt.show()
-
 
 ### ModelCrossSection
 #fig = plt.figure(figsize=(8, 6))
 #ax = fig.add_subplot(1, 1, 1)
 #ax.set_title('contour_array() and plot_surface()')
-modelxsect = flopy.plot.ModelCrossSection(model=mf, line={'row': 105})
+modelxsect = flopy.plot.ModelCrossSection(model=mf, line={'row': 5})
 #ct = modelxsect.contour_array(head, masked_values=[999.], head=head, levels=levels)
 patches = modelxsect.plot_ibound(head=head)
 wt = modelxsect.plot_surface(head, masked_values=[999.], color='blue', lw=1)
@@ -657,14 +664,16 @@ plt.title('Profilschnitt in W-O-Richtung mit Grundwasserständen')
 plt.ylabel('m')
 plt.xlabel('m')
 plt.axis([0, 4000, 0, 200])
+plt.savefig('xsect.png', dpi=300)
 plt.show()
+
 #t = ax.set_title('Column 6 Cross-Section - Model Grid')
 
 ### ModelCrossSection
 #fig = plt.figure(figsize=(8, 6))
 #ax = fig.add_subplot(1, 1, 1)
 #ax.set_title('contour_array() and plot_surface()')
-modelysect = flopy.plot.ModelCrossSection(model=mf, line={'column': 30})
+modelysect = flopy.plot.ModelCrossSection(model=mf, line={'column': 70})
 #ct = modelxsect.contour_array(head, masked_values=[999.], head=head, levels=levels)
 patches = modelysect.plot_ibound(head=head)
 wt = modelysect.plot_surface(head, masked_values=[999.], color='blue', lw=1)
@@ -673,6 +682,7 @@ plt.title('Profilschnitt in N-S-Richtung mit Grundwasserständen')
 plt.ylabel('m')
 plt.xlabel('m')
 plt.axis([0, 5400, 0, 200])
+plt.savefig('ysect.png', dpi=300)
 plt.show()
 #t = ax.set_title('Column 6 Cross-Section - Model Grid')
     
