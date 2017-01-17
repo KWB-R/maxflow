@@ -384,32 +384,38 @@ layer3_budget_perStressPeriod['LEAKAGE_FROM_LAYER2'] = layer_budget_perStressPer
  
 
 bar_width = 0.35
-plt.bar(layer3_budget_perStressPeriod['stress_period'], layer3_budget_perStressPeriod['MNW2_OUT'], bar_width, label="Out: Brunnen")
+plt.bar(layer3_budget_perStressPeriod['stress_period'], layer3_budget_perStressPeriod['MNW2_OUT'], bar_width, color='b', label="Out: Brunnen")
 plt.bar(layer3_budget_perStressPeriod['stress_period'], 
         layer3_budget_perStressPeriod['CONSTANT_HEAD_OUT'], 
         bar_width, 
         color= 'green', 
         label="Out: Rand", 
         bottom=layer3_budget_perStressPeriod['MNW2_OUT'])
+plt.bar(layer3_budget_perStressPeriod['stress_period'], 
+        layer3_budget_perStressPeriod['STORAGE_OUT'], 
+        bar_width, 
+        color= 'brown', 
+        label="Out: Vorrat", 
+        bottom=layer3_budget_perStressPeriod['MNW2_OUT']+layer3_budget_perStressPeriod['CONSTANT_HEAD_OUT'])
 plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width,  
         layer3_budget_perStressPeriod['STORAGE_IN'], 
         bar_width, 
         color='r', 
-        label="In: Vorrat")
+        label="Vorrat")
 plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width, 
         layer3_budget_perStressPeriod['CONSTANT_HEAD_IN'], 
         bar_width,
         color= 'orange', 
-        label="In: Rand", 
+        label="Rand", 
         bottom=layer3_budget_perStressPeriod['STORAGE_IN'])
 plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width, 
         layer3_budget_perStressPeriod['LEAKAGE_FROM_LAYER2'],
         bar_width,
         color= 'grey', 
-        label="In: Leakage (layer2)", 
-        bottom=layer3_budget_perStressPeriod['CONSTANT_HEAD_IN'])
-plt.legend(bbox_to_anchor=(1.3, 0.7), bbox_transform=plt.gcf().transFigure)
-plt.title('Wasserbilanz Layer 3 (in m3 pro Stressperiode)')
+        label="Leakage", 
+        bottom=layer3_budget_perStressPeriod['CONSTANT_HEAD_IN'] + layer3_budget_perStressPeriod['STORAGE_IN'])
+plt.legend(bbox_to_anchor=(0.4, 0.9), bbox_transform=plt.gcf().transFigure)
+plt.title('Entnahme aus 6B (in m3 pro Stressperiode)')
 plt.axis([0, 10, 0, 1.8e7])
 plt.ylabel('m3')
 plt.xlabel('Stressperiode')
@@ -417,92 +423,92 @@ plt.xticks(layer3_budget_perStressPeriod['stress_period'])
 plt.savefig('budget_layer3.png', dpi=300)
 plt.show()
 
-
-# Setup contour parameters
-levels = np.linspace(0, 80, 17)
-extent = (delr/2., Ly - delr/2., delc/2., Lx - delc/2.)
-print('Levels: ', levels)
-print('Extent: ', extent)
-
-# Well point
-
-def getStressPeriod(time, 
-                    stress_period_ende = perlen):
-    
-    cum_perende = np.cumsum(stress_period_ende)
-    
-    stress_period = sum(time > cum_perende)
-   
-    return(stress_period )
-    
-
-# Make the plots
-for iplot, time in enumerate(times):
-    print('*****Processing time: ', time)
-    
-    ### Get head data
-    head = headobj.get_data(totim=time)
-    
-    ### Get pumping wells 
-    str_per = getStressPeriod(time)
- 
-    #Print statistics
-    print('Head statistics')
-    print('  min: ', head.min())
-    print('  max: ', head.max())
-    print('  std: ', head.std())
-
-    # Extract flow right face and flow front face
-    frf = cbb.get_data(text='FLOW RIGHT FACE', totim=time)[0]
-    fff = cbb.get_data(text='FLOW FRONT FACE', totim=time)[0]
-
-    #Create the plot
-    #plt.subplot(1, len(mytimes), iplot + 1, aspect='equal')
-    plt.subplot(1, 1, 1, aspect='equal')
-    plt.title('total time: ' + str(time) + ' days\n(Stress period: ' + str(str_per) + ")")
-    modelmap = flopy.plot.ModelMap(model=mf, layer=plot_layer)
-    qm = modelmap.plot_ibound()
-    lc = modelmap.plot_grid()
-    #qm = modelmap.plot_bc('GHB', alpha=0.5)
-    cs = modelmap.contour_array(head, levels=levels)
-    plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
-    quiver = modelmap.plot_discharge(frf, fff, head=head)
-#    mfc = 'None'
-#    if (iplot+1) == len(times):
-    mfc='black'
-    plt.plot(2050,4950, 
-                 lw=0, 
-                 marker='o', 
-                 markersize=3, 
-                 markeredgewidth=1,
-                 markeredgecolor='red', 
-                 markerfacecolor=mfc, 
-                 zorder=9)
-    if 'mnw2' in locals():
-        print("Using MNW2 package and plotting active wells")
-        mnw_wells = wells_info[wells_info['per'] == str_per] 
-        plt.plot(mnw_wells['j']*delc, 
-                 Ly-(mnw_wells['i']*delr), 
-                 lw=0, 
-                 marker='o', 
-                 markersize=3, 
-                 markeredgewidth=1,
-                 markeredgecolor='black', 
-                 markerfacecolor=mfc, 
-                 zorder=9)
-    else:
-        print("Using WEL package and plotting active wells")
-        pumping_wells = pumping_data[str_per]
-        plt.plot(pumping_wells[:,2]*delc, 
-                 pumping_wells[:,1]*delr, 
-                 lw=0, marker='o', markersize=3, 
-                 markeredgewidth=1,
-                 markeredgecolor='black', markerfacecolor=mfc, zorder=9)
-    plt.show()
-    #plt.text(wpt[0]+25, wpt[1]-25, 'well', size=12, zorder=12)
-
-
-plt.show()
+#
+## Setup contour parameters
+#levels = np.linspace(0, 80, 17)
+#extent = (delr/2., Ly - delr/2., delc/2., Lx - delc/2.)
+#print('Levels: ', levels)
+#print('Extent: ', extent)
+#
+## Well point
+#
+#def getStressPeriod(time, 
+#                    stress_period_ende = perlen):
+#    
+#    cum_perende = np.cumsum(stress_period_ende)
+#    
+#    stress_period = sum(time > cum_perende)
+#   
+#    return(stress_period )
+#    
+#
+## Make the plots
+#for iplot, time in enumerate(times):
+#    print('*****Processing time: ', time)
+#    
+#    ### Get head data
+#    head = headobj.get_data(totim=time)
+#    
+#    ### Get pumping wells 
+#    str_per = getStressPeriod(time)
+# 
+#    #Print statistics
+#    print('Head statistics')
+#    print('  min: ', head.min())
+#    print('  max: ', head.max())
+#    print('  std: ', head.std())
+#
+#    # Extract flow right face and flow front face
+#    frf = cbb.get_data(text='FLOW RIGHT FACE', totim=time)[0]
+#    fff = cbb.get_data(text='FLOW FRONT FACE', totim=time)[0]
+#
+#    #Create the plot
+#    #plt.subplot(1, len(mytimes), iplot + 1, aspect='equal')
+#    plt.subplot(1, 1, 1, aspect='equal')
+#    plt.title('total time: ' + str(time) + ' days\n(Stress period: ' + str(str_per) + ")")
+#    modelmap = flopy.plot.ModelMap(model=mf, layer=plot_layer)
+#    qm = modelmap.plot_ibound()
+#    lc = modelmap.plot_grid()
+#    #qm = modelmap.plot_bc('GHB', alpha=0.5)
+#    cs = modelmap.contour_array(head, levels=levels)
+#    plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
+#    quiver = modelmap.plot_discharge(frf, fff, head=head)
+##    mfc = 'None'
+##    if (iplot+1) == len(times):
+#    mfc='black'
+#    plt.plot(2050,4950, 
+#                 lw=0, 
+#                 marker='o', 
+#                 markersize=3, 
+#                 markeredgewidth=1,
+#                 markeredgecolor='red', 
+#                 markerfacecolor=mfc, 
+#                 zorder=9)
+#    if 'mnw2' in locals():
+#        print("Using MNW2 package and plotting active wells")
+#        mnw_wells = wells_info[wells_info['per'] == str_per] 
+#        plt.plot(mnw_wells['j']*delc, 
+#                 Ly-(mnw_wells['i']*delr), 
+#                 lw=0, 
+#                 marker='o', 
+#                 markersize=3, 
+#                 markeredgewidth=1,
+#                 markeredgecolor='black', 
+#                 markerfacecolor=mfc, 
+#                 zorder=9)
+#    else:
+#        print("Using WEL package and plotting active wells")
+#        pumping_wells = pumping_data[str_per]
+#        plt.plot(pumping_wells[:,2]*delc, 
+#                 pumping_wells[:,1]*delr, 
+#                 lw=0, marker='o', markersize=3, 
+#                 markeredgewidth=1,
+#                 markeredgecolor='black', markerfacecolor=mfc, zorder=9)
+#    plt.show()
+#    #plt.text(wpt[0]+25, wpt[1]-25, 'well', size=12, zorder=12)
+#
+#
+#plt.show()
 
 
 
@@ -632,14 +638,14 @@ idx1_1 = (obsPoint1_1[0],
 ts = headobj.get_ts(idx1) 
 ts_1 = headobj.get_ts(idx1_1) 
 plt.subplot(1, 1, 1)
-ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
+ttl = 'Wasserstand im Modellpunkt x = {1} m and y = {2} m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
 plt.title(ttl)
-plt.xlabel('time in days')
-plt.ylabel('head in m')
-plt.plot(ts[:, 0], ts[:, 1], color="blue", label='simulated 6B')
-plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='simulated 6D')
-plt.plot(obs_measured1[:, 0], obs_measured1[:, 1] + botm[nlay-1,int(idx1[1]),int(idx1[2])], color="blue", ls=':', label='measured (814193)')
-plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='measured (814192)')
+plt.xlabel('Zeit in Tagen')
+plt.ylabel('Wasserstand in m')
+plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
+plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
+plt.plot(obs_measured1[:, 0], obs_measured1[:, 1] + botm[nlay-1,int(idx1[1]),int(idx1[2])], color="blue", ls=':', label='Pegel 6B (814193)')
+plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='Pegel 6D (814192)')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_north.png', dpi=300)
@@ -659,12 +665,12 @@ idx2 = (obsPoint_502612[0],
        round(obsPoint_502612[1]/delc,0))
 ts = headobj.get_ts(idx2) 
 plt.subplot(1, 1, 1)
-ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint_502612[0] + 1, obsPoint_502612[1], obsPoint_502612[2])
+ttl = 'Wasserstand im Modellpunkt x = 2650 m and y = 2230 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
 plt.title(ttl)
-plt.xlabel('time in days')
-plt.ylabel('head in m')
-plt.plot(ts[:, 0], ts[:, 1], label='simulated')
-plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], color="red", label='measured (502612)')
+plt.xlabel('Zeit in Tagen')
+plt.ylabel('Wasserstand in m')
+plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
+plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (502612)')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_centre.png', dpi=300)
@@ -684,12 +690,12 @@ idx2 = (obsPoint_502442[0],
        round(obsPoint_502442[1]/delc,0))
 ts = headobj.get_ts(idx2)
 plt.subplot(1, 1, 1)
-ttl = 'Head in layer {0} at x = {1} m and y = {2} m'.format(obsPoint_502442[0] + 1, obsPoint_502442[1], obsPoint_502442[2])
+ttl = 'Wasserstand im Modellpunkt x = 3900 m and y = 5230 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
 plt.title(ttl)
-plt.xlabel('time in days')
-plt.ylabel('head in m')
-plt.plot(ts[:, 0], ts[:, 1], label='simulated')
-plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], color="red", label='measured (502442)')
+plt.xlabel('Zeit in Tagen')
+plt.ylabel('Wasserstand in m')
+plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
+plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (502442)')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_south.png', dpi=300)
@@ -719,8 +725,8 @@ plt.bar(data ['index'], budget_incremental["MNW2_OUT"].as_matrix()*perlen, bar_w
 plt.bar(data ['index'], budget_incremental["CONSTANT_HEAD_OUT"].as_matrix()*perlen, bar_width, color= 'green', label="Out: Rand", bottom=budget_incremental["MNW2_OUT"].as_matrix()*perlen)
 plt.bar(data ['index'] + bar_width, budget_incremental["STORAGE_IN"].as_matrix()*perlen, bar_width, color='r', label="In: Vorrat")
 plt.bar(data ['index'] + bar_width, budget_incremental["CONSTANT_HEAD_IN"].as_matrix()*perlen, bar_width, color= 'orange', label="In: Rand", bottom=budget_incremental["STORAGE_IN"].as_matrix()*perlen)
-plt.legend(bbox_to_anchor=(0.5, 0.9), bbox_transform=plt.gcf().transFigure)
-plt.title('Wasserbilanz (in m3 pro Stressperiode)')
+plt.legend(bbox_to_anchor=(0.45, 0.9), bbox_transform=plt.gcf().transFigure)
+plt.title('Wasserbilanz Gesamt (in m3 pro Stressperiode)')
 plt.axis([0, 10, 0, 1.8e7])
 plt.ylabel('m3')
 plt.xlabel('Stressperiode')
