@@ -384,7 +384,7 @@ layer3_budget_perStressPeriod['LEAKAGE_FROM_LAYER2'] = layer_budget_perStressPer
  
 
 bar_width = 0.35
-plt.bar(layer3_budget_perStressPeriod['stress_period'], layer3_budget_perStressPeriod['MNW2_OUT'], bar_width, color='b', label="Out: Brunnen")
+plt.bar(layer3_budget_perStressPeriod['stress_period'], layer3_budget_perStressPeriod['MNW2_OUT'], bar_width, color='b', label="QBrunnen")
 plt.bar(layer3_budget_perStressPeriod['stress_period'], 
         layer3_budget_perStressPeriod['CONSTANT_HEAD_OUT'], 
         bar_width, 
@@ -401,18 +401,18 @@ plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width,
         layer3_budget_perStressPeriod['STORAGE_IN'], 
         bar_width, 
         color='r', 
-        label="Vorrat")
+        label="QVorrat")
 plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width, 
         layer3_budget_perStressPeriod['CONSTANT_HEAD_IN'], 
         bar_width,
         color= 'orange', 
-        label="Rand", 
+        label="QRand", 
         bottom=layer3_budget_perStressPeriod['STORAGE_IN'])
 plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width, 
         layer3_budget_perStressPeriod['LEAKAGE_FROM_LAYER2'],
         bar_width,
         color= 'grey', 
-        label="Leakage", 
+        label="QLeakage", 
         bottom=layer3_budget_perStressPeriod['CONSTANT_HEAD_IN'] + layer3_budget_perStressPeriod['STORAGE_IN'])
 plt.legend(bbox_to_anchor=(0.4, 0.9), bbox_transform=plt.gcf().transFigure)
 plt.title('Entnahme aus 6B (in m3 pro Stressperiode)')
@@ -420,15 +420,15 @@ plt.axis([0, 10, 0, 1.8e7])
 plt.ylabel('m3')
 plt.xlabel('Stressperiode')
 plt.xticks(layer3_budget_perStressPeriod['stress_period'])
-plt.savefig('budget_layer3.png', dpi=300)
+plt.savefig('budget_layer3.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-#
-## Setup contour parameters
-#levels = np.linspace(0, 80, 17)
-#extent = (delr/2., Ly - delr/2., delc/2., Lx - delc/2.)
-#print('Levels: ', levels)
-#print('Extent: ', extent)
+
+# Setup contour parameters
+levels = np.linspace(0, 80, 17)
+extent = (delr/2., Ly - delr/2., delc/2., Lx - delc/2.)
+print('Levels: ', levels)
+print('Extent: ', extent)
 #
 ## Well point
 #
@@ -524,6 +524,8 @@ quadmesh = modelmap.plot_ibound()
 contour_set = modelmap.plot_array(head[plot_layer,:,:], 
                                   masked_values=[-1e+30], 
                                   alpha=0.5)
+cs = modelmap.contour_array(head, levels=levels)
+plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
 linecollection = modelmap.plot_grid()
 cb = plt.colorbar(contour_set, shrink=0.4)
 plt.plot(2050,4950, 
@@ -550,9 +552,17 @@ plt.plot(3900,270,
                  markeredgecolor='red', 
                  markerfacecolor=mfc, 
                  zorder=9)
+plt.plot(2875,5000, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=3, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor=mfc, 
+                 zorder=9)
 if 'mnw2' in locals():
         print("Using MNW2 package and plotting active wells")
-        mnw_wells = wells_info[wells_info['per'] == str_per-1] 
+        mnw_wells = wells_info[wells_info['per'] == sper] 
         plt.plot(mnw_wells['j']*delc, 
                  Ly-(mnw_wells['i']*delr), 
                  lw=0, 
@@ -564,8 +574,8 @@ if 'mnw2' in locals():
                  zorder=9)
 plt.show()
 
-
-mytitle = 'Head above layer ' + str(plot_layer) + ' bottom elevation after '+ str(time) + ' days of simulation'
+##Restwasser
+mytitle = 'Restwassermächtigkeit im 6B in 2015' # + str(plot_layer) + ' bottom elevation after '+ str(time) + ' days of simulation'
 fig = plt.figure(figsize=(10, 10))
 ax = fig.add_subplot(1, 1, 1, aspect='equal')
 title = ax.set_title(mytitle)
@@ -574,35 +584,49 @@ quadmesh = modelmap.plot_ibound()
 contour_set = modelmap.plot_array(head[plot_layer,:,:]-botm[plot_layer], 
                                   masked_values=[-1e+30], 
                                   alpha=0.5)
+#levels = np.linspace(0, 80, 17)
+#extent = (delr/2., Ly - delr/2., delc/2., Lx - delc/2.)
+#print('Levels: ', levels)
+#print('Extent: ', extent)
+#cs = modelmap.contour_array(head[plot_layer,:,:]-botm[plot_layer], levels=levels)
+#plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
 linecollection = modelmap.plot_grid()
 cb = plt.colorbar(contour_set, shrink=0.4)
 plt.plot(2050,4950, 
                  lw=0, 
                  marker='o', 
-                 markersize=3, 
+                 markersize=8, 
                  markeredgewidth=1,
                  markeredgecolor='red', 
-                 markerfacecolor=mfc, 
+                 markerfacecolor='red', 
                  zorder=9)
 plt.plot(2650,3250, 
                  lw=0, 
                  marker='o', 
-                 markersize=3, 
+                 markersize=8, 
                  markeredgewidth=1,
                  markeredgecolor='red', 
-                 markerfacecolor=mfc, 
+                 markerfacecolor='red', 
                  zorder=9)
 plt.plot(3900,270, 
                  lw=0, 
                  marker='o', 
-                 markersize=3, 
+                 markersize=8, 
                  markeredgewidth=1,
                  markeredgecolor='red', 
-                 markerfacecolor=mfc, 
+                 markerfacecolor='red', 
+                 zorder=9)
+plt.plot(2875,5000, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=8, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor='red', 
                  zorder=9)
 if 'mnw2' in locals():
         print("Using MNW2 package and plotting active wells")
-        mnw_wells = wells_info[wells_info['per'] == str_per-1] 
+        mnw_wells = wells_info[wells_info['per'] == sper] 
         plt.plot(mnw_wells['j']*delc, 
                  Ly-(mnw_wells['i']*delr), 
                  lw=0, 
@@ -612,7 +636,7 @@ if 'mnw2' in locals():
                  markeredgecolor='black', 
                  markerfacecolor=mfc, 
                  zorder=9)
-plt.savefig('Restwasser.png', dpi=300)
+plt.savefig('Restwasser.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ###Plot the head versus time
@@ -648,10 +672,35 @@ plt.plot(obs_measured1[:, 0], obs_measured1[:, 1] + botm[nlay-1,int(idx1[1]),int
 plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='Pegel 6D (814192)')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
-plt.savefig('time_series_north.png', dpi=300)
+plt.savefig('time_series_north.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ### Import measured observation point 2
+obs_measured_503372  = np.loadtxt('obs_head_time_503372.csv', 
+                           delimiter=",",
+                           skiprows = 1)
+
+## User defined observation point in format: layer, x, y-coordinate (absolute)
+obsPoint_503372 = [plot_layer, 2875, 400]
+
+## Convert observation point to layer, column, row format
+idx2 = (obsPoint_503372[0], 
+       round(obsPoint_503372[2]/delr,0), 
+       round(obsPoint_503372[1]/delc,0))
+ts = headobj.get_ts(idx2) 
+plt.subplot(1, 1, 1)
+ttl = 'Wasserstand im Modellpunkt x = 28750 m and y = 400 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
+plt.title(ttl)
+plt.xlabel('Zeit in Tagen')
+plt.ylabel('Wasserstand in m')
+plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
+plt.plot(obs_measured_503372[:, 0], obs_measured_503372[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (503372)')
+plt.legend()
+plt.axis([0, 3500, 0, 160])
+plt.savefig('time_series_east.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+### Import measured observation point 3
 obs_measured_502612  = np.loadtxt('obs_head_time_502612.csv', 
                            delimiter=",",
                            skiprows = 1)
@@ -673,32 +722,40 @@ plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (502612)')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
-plt.savefig('time_series_centre.png', dpi=300)
+plt.savefig('time_series_centre.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-### Import measured observation point 3
+### Import measured observation point 4
 obs_measured_502442  = np.loadtxt('obs_head_time_502442.csv', 
                            delimiter=",",
                            skiprows = 1)
-
+obs_measured_502441  = np.loadtxt('obs_head_time_502441.csv', 
+                           delimiter=",",
+                           skiprows = 1)
 ## User defined observation point in format: layer, x, y-coordinate (absolute)
 obsPoint_502442 = [plot_layer, 3900, 5230]
-
+obsPoint_502441 = [0, 3900, 5230]
 ## Convert observation point to layer, column, row format
-idx2 = (obsPoint_502442[0], 
+idx4 = (obsPoint_502442[0], 
        round(obsPoint_502442[2]/delr,0), 
        round(obsPoint_502442[1]/delc,0))
-ts = headobj.get_ts(idx2)
+idx4_1 = (obsPoint_502441[0], 
+       round(obsPoint_502441[2]/delr,0), 
+       round(obsPoint_502441[1]/delc,0))
+ts = headobj.get_ts(idx4)
+ts_1 = headobj.get_ts(idx4_1)
 plt.subplot(1, 1, 1)
-ttl = 'Wasserstand im Modellpunkt x = 3900 m and y = 5230 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
+ttl = 'Wasserstand im Modellpunkt x = 3900 m and y = 5230 m'.format(obsPoint_502442[0] + 1, obsPoint_502442[1], obsPoint_502442[2])
 plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
-plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (502442)')
-plt.legend()
+plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
+plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx4[1]),int(idx4[2])], ls=':', label='Pegel 6B (502442)')
+plt.plot(obs_measured_502441[:, 0], obs_measured_502441[:, 1] + botm[nlay-1,int(idx4_1[1]),int(idx4_1[2])], color="red", ls=':', label='Pegel 6D (502441)')
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
-plt.savefig('time_series_south.png', dpi=300)
+plt.savefig('time_series_south.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 #budget graphs
@@ -721,17 +778,17 @@ budget_incremental, budget_cumulative = mf_list.get_dataframes(start_datetime='3
 #plt.plot(budget_incremental["CONSTANT_HEAD_OUT"].as_matrix()*perlen, label="Out: constant head")
 #plt.plot(budget_incremental["MNW2_OUT"].as_matrix()*perlen, label="Out: MNW2")
 bar_width = 0.35
-plt.bar(data ['index'], budget_incremental["MNW2_OUT"].as_matrix()*perlen, bar_width, label="Out: Brunnen")
+plt.bar(data ['index'], budget_incremental["MNW2_OUT"].as_matrix()*perlen, bar_width, label="QBrunnen")
 plt.bar(data ['index'], budget_incremental["CONSTANT_HEAD_OUT"].as_matrix()*perlen, bar_width, color= 'green', label="Out: Rand", bottom=budget_incremental["MNW2_OUT"].as_matrix()*perlen)
-plt.bar(data ['index'] + bar_width, budget_incremental["STORAGE_IN"].as_matrix()*perlen, bar_width, color='r', label="In: Vorrat")
-plt.bar(data ['index'] + bar_width, budget_incremental["CONSTANT_HEAD_IN"].as_matrix()*perlen, bar_width, color= 'orange', label="In: Rand", bottom=budget_incremental["STORAGE_IN"].as_matrix()*perlen)
-plt.legend(bbox_to_anchor=(0.45, 0.9), bbox_transform=plt.gcf().transFigure)
+plt.bar(data ['index'] + bar_width, budget_incremental["STORAGE_IN"].as_matrix()*perlen, bar_width, color='r', label="QVorrat")
+plt.bar(data ['index'] + bar_width, budget_incremental["CONSTANT_HEAD_IN"].as_matrix()*perlen, bar_width, color= 'orange', label="QRand", bottom=budget_incremental["STORAGE_IN"].as_matrix()*perlen)
+plt.legend(bbox_to_anchor=(0.4, 0.9), bbox_transform=plt.gcf().transFigure)
 plt.title('Wasserbilanz Gesamt (in m3 pro Stressperiode)')
 plt.axis([0, 10, 0, 1.8e7])
 plt.ylabel('m3')
 plt.xlabel('Stressperiode')
 plt.xticks(data ['index'])
-plt.savefig('budget.png', dpi=300)
+plt.savefig('budget.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ###pump graph
@@ -765,7 +822,7 @@ plt.title('Profilschnitt in W-O-Richtung mit Grundwasserständen')
 plt.ylabel('m')
 plt.xlabel('m')
 plt.axis([0, 4000, 0, 200])
-plt.savefig('xsect.png', dpi=300)
+plt.savefig('xsect.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 #t = ax.set_title('Column 6 Cross-Section - Model Grid')
@@ -783,7 +840,7 @@ plt.title('Profilschnitt in N-S-Richtung mit Grundwasserständen')
 plt.ylabel('m')
 plt.xlabel('m')
 plt.axis([0, 5400, 0, 200])
-plt.savefig('ysect.png', dpi=300)
+plt.savefig('ysect.png', dpi=300, bbox_inches='tight')
 plt.show()
 #t = ax.set_title('Column 6 Cross-Section - Model Grid')
     
