@@ -31,7 +31,6 @@ def get_layerbudget(modelname,
     for stress_period in np.arange(0,nper).astype('int'):
         for time_step in np.arange(0,perlen[stress_period]).astype('int'):
             bud = cbb.get_data(kstpkper = (time_step,stress_period), 
-                       verbose = False, 
                        full3D=True)    
             for layer in np.arange(0,nlay).astype('int'): 
                 if debug: print("Stress period: " + str(stress_period + 1) + ", Time step: " + str(time_step + 1) + ", Layer: " + str(layer + 1))
