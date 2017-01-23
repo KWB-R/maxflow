@@ -659,6 +659,9 @@ idx1 = (obsPoint1[0],
 idx1_1 = (obsPoint1_1[0], 
        round(obsPoint1_1[2]/delr,0), 
        round(obsPoint1_1[1]/delc,0))
+
+idx_bot = dis.botm.array[:, int(idx1[1]), int(idx1[2])]
+
 ts = headobj.get_ts(idx1) 
 ts_1 = headobj.get_ts(idx1_1) 
 plt.subplot(1, 1, 1)
@@ -670,6 +673,9 @@ plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
 plt.plot(obs_measured1[:, 0], obs_measured1[:, 1] + botm[nlay-1,int(idx1[1]),int(idx1[2])], color="blue", ls=':', label='Pegel 6B (814193)')
 plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='Pegel 6D (814192)')
+plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_north.png', dpi=300, bbox_inches='tight')
@@ -687,14 +693,20 @@ obsPoint_503372 = [plot_layer, 2875, 400]
 idx2 = (obsPoint_503372[0], 
        round(obsPoint_503372[2]/delr,0), 
        round(obsPoint_503372[1]/delc,0))
+
+idx_bot = dis.botm.array[:, int(idx2[1]), int(idx2[2])]
+                         
 ts = headobj.get_ts(idx2) 
 plt.subplot(1, 1, 1)
-ttl = 'Wasserstand im Modellpunkt x = 28750 m and y = 400 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
+ttl = 'Wasserstand im Modellpunkt x = 2875 m and y = 400 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
 plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(obs_measured_503372[:, 0], obs_measured_503372[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (503372)')
+plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_east.png', dpi=300, bbox_inches='tight')
@@ -712,6 +724,8 @@ obsPoint_502612 = [plot_layer, 2650, 2230]
 idx2 = (obsPoint_502612[0], 
        round(obsPoint_502612[2]/delr,0), 
        round(obsPoint_502612[1]/delc,0))
+
+idx_bot = dis.botm.array[:, int(idx2[1]), int(idx2[2])]
 ts = headobj.get_ts(idx2) 
 plt.subplot(1, 1, 1)
 ttl = 'Wasserstand im Modellpunkt x = 2650 m and y = 2230 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
@@ -720,6 +734,9 @@ plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (502612)')
+plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_centre.png', dpi=300, bbox_inches='tight')
@@ -742,6 +759,8 @@ idx4 = (obsPoint_502442[0],
 idx4_1 = (obsPoint_502441[0], 
        round(obsPoint_502441[2]/delr,0), 
        round(obsPoint_502441[1]/delc,0))
+
+idx_bot = dis.botm.array[:, int(idx4[1]), int(idx4[2])]
 ts = headobj.get_ts(idx4)
 ts_1 = headobj.get_ts(idx4_1)
 plt.subplot(1, 1, 1)
@@ -753,6 +772,9 @@ plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
 plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx4[1]),int(idx4[2])], ls=':', label='Pegel 6B (502442)')
 plt.plot(obs_measured_502441[:, 0], obs_measured_502441[:, 1] + botm[nlay-1,int(idx4_1[1]),int(idx4_1[2])], color="red", ls=':', label='Pegel 6D (502441)')
+plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_south.png', dpi=300, bbox_inches='tight')
