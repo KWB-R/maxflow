@@ -42,9 +42,9 @@ botm = set_layerbottom(botm_north = np.array([ztop - delv[0],ztop - sum(delv[0:2
 #botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
 
 
-hk = np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #horizontal conductivity
+hk = np.array([2e-5*3600*24, 1e-9*3600*24, 3e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #vertical conductivity
+vka =  np.array([2e-5*3600*24, 1e-9*3600*24, 3e-5*3600*24], #vertical conductivity
                 dtype=np.float32)
 sy = np.array([0.123, 0.023, 0.123], #specific yield
               dtype=np.float32)
@@ -235,6 +235,47 @@ node_data["j"] = (node_data["x"]/delc).astype(int)
 wells_location = node_data
 
 
+
+### Taking into account higher leakage through boreholes
+def get_realLeakage(area_welllocs = 0.3, #meter^2
+                    area_model = 2500,  #meter^2 
+                    kf_welllocs = 1E-7, #meter/day
+                    kf_natural = 1E-6 #meter/day
+                    ):
+    return((area_welllocs * kf_welllocs + (area_model - area_welllocs) * kf_natural)/area_model);
+
+
+area_borehole = 0.3 ###meter^2
+kf_borehole = 1e-3*24*3600 #### meter / day
+hk_with_boreholes = lpf.hk.array  ###copied from initial model 
+vka_with_boreholes = lpf.vka.array ###copied from initial model 
+
+### Replacing natural leakage with combined leakage value for all wells screened 
+### below MODFLOW layer 2 (i.e. in flopy: below layer 1) 
+for well_cell_idx in np.arange(0,len(wells_location),1):
+    tmp_well = wells_location.ix[[well_cell_idx]]
+    k = int(tmp_well.ix[:, ['k']].values)
+    if (k >= 2):
+        i = int(tmp_well.ix[:,['i']].values)
+        j = int(tmp_well.ix[:,['j']].values)
+        leak_layer = 1
+        area_model = dis.delc.array[i]*dis.delr.array[j] - area_borehole
+    
+        hk_with_boreholes[leak_layer,i,j] = get_realLeakage(area_borehole, area_model, kf_borehole, lpf.hk.array[leak_layer,i,j])
+        vka_with_boreholes[leak_layer,i,j] = get_realLeakage(area_borehole, area_model, kf_borehole, lpf.vka.array[leak_layer,i,j])
+    else: 
+        print('Well not screened in model layer 3 or higher')
+    
+
+        
+###Overwrite existing lpf package with combined natural+borehole leakage for layer 1        
+lpf = flopy.modflow.ModflowLpf(mf, #layer-property-flow
+                               hk = hk_with_boreholes, 
+                               vka = vka_with_boreholes, 
+                               sy = sy, 
+                               ss = ss, 
+                               laytyp = laytyp,
+                               constantcv = True)
 #ids = np.arange(80, 80+node_data["wellid"].count()).astype(str)
 #np.array(map(str, ids))
 #"DATA          " + ids + " " + node_data["wellid"].values.astype(str) + ".byn"
@@ -337,7 +378,7 @@ else:
 # Run the model
 success, mfoutput = mf.run_model(silent=False, pause=False)
 if not success:
-    raise Exception('MODFLOW did not terminate normalLx.')
+    raise Exception('MODFLOW did not terminate normally.')
 
     
 plot_layer = 2 
@@ -528,7 +569,7 @@ cs = modelmap.contour_array(head, levels=levels)
 plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
 linecollection = modelmap.plot_grid()
 cb = plt.colorbar(contour_set, shrink=0.4)
-plt.plot(2050,4950, 
+mfc = 'None'plt.plot(2050,4950, 
                  lw=0, 
                  marker='o', 
                  markersize=3, 
