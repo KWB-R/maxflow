@@ -56,9 +56,9 @@ def get_layerbudget(modelname,
                               'FLOW_FRONT_FACE',
                               'FLOW_LOWER_FACE'])
                 bud_agg = bud_agg.append(tmp,ignore_index=True)
-    bud_agg['CONSTANT_HEAD_IN'] = bud_agg['CONSTANT_HEAD_IN'].as_matrix().astype("float32")
-    bud_agg['CONSTANT_HEAD_OUT'] = bud_agg['CONSTANT_HEAD_OUT'].as_matrix().astype("float32")
-    bud_agg['CONSTANT_HEAD_IN'][np.isnan(bud_agg['CONSTANT_HEAD_IN'])] = 0
-    bud_agg['CONSTANT_HEAD_OUT'][np.isnan(bud_agg['CONSTANT_HEAD_OUT'])] = 0
+    bud_agg.loc[:,['CONSTANT_HEAD_IN']] = bud_agg['CONSTANT_HEAD_IN'].as_matrix().astype("float32")
+    bud_agg.loc[:,['CONSTANT_HEAD_OUT']] = bud_agg['CONSTANT_HEAD_OUT'].as_matrix().astype("float32")
+    bud_agg.loc[np.isnan(bud_agg['CONSTANT_HEAD_IN']),['CONSTANT_HEAD_IN']] = 0
+    bud_agg.loc[np.isnan(bud_agg['CONSTANT_HEAD_OUT']),['CONSTANT_HEAD_OUT']] = 0
     return(bud_agg)
 
