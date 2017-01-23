@@ -42,9 +42,9 @@ botm = set_layerbottom(botm_north = np.array([ztop - delv[0],ztop - sum(delv[0:2
 #botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
 
 
-hk = np.array([2e-5*3600*24, 1e-9*3600*24, 3e-5*3600*24], #horizontal conductivity
+hk = np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #horizontal conductivity
               dtype=np.float32)
-vka =  np.array([2e-5*3600*24, 1e-9*3600*24, 3e-5*3600*24], #vertical conductivity
+vka =  np.array([2e-5*3600*24, 1e-8*3600*24, 3e-5*3600*24], #vertical conductivity
                 dtype=np.float32)
 sy = np.array([0.123, 0.023, 0.123], #specific yield
               dtype=np.float32)
@@ -129,7 +129,7 @@ lpf = flopy.modflow.ModflowLpf(mf, #layer-property-flow
                                ss = ss, 
                                laytyp = laytyp,
                                constantcv = True)
-pcg = flopy.modflow.ModflowPcg(mf, 
+pcg = flopy.modflow.ModflowPcg(mf,
                                hclose = 1E-4,
                                rclose = 5E-4) #Preconditioned Conjugate-Gradient
 
@@ -235,49 +235,6 @@ node_data["j"] = (node_data["x"]/delc).astype(int)
 wells_location = node_data
 
 
-
-### Taking into account higher leakage through boreholes
-def get_realLeakage(area_welllocs = 0.3, #meter^2
-                    area_model = 2500,  #meter^2 
-                    kf_welllocs = 1E-7, #meter/day
-                    kf_natural = 1E-6 #meter/day
-                    ):
-    return((area_welllocs * kf_welllocs + (area_model - area_welllocs) * kf_natural)/area_model);
-
-
-area_borehole = 0.3 ###meter^2
-kf_borehole = 1e-3*24*3600 #### meter / day
-hk_with_boreholes = lpf.hk.array  ###copied from initial model 
-vka_with_boreholes = lpf.vka.array ###copied from initial model 
-
-### Replacing natural leakage with combined leakage value for all wells screened 
-### below MODFLOW layer 2 (i.e. in flopy: below layer 1) 
-for well_cell_idx in np.arange(0,len(wells_location),1):
-    tmp_well = wells_location.ix[[well_cell_idx]]
-    k = int(tmp_well.ix[:, ['k']].values)
-    if (k >= 2):
-        i = int(tmp_well.ix[:,['i']].values)
-        j = int(tmp_well.ix[:,['j']].values)
-        leak_layer = 1
-        area_model = dis.delc.array[i]*dis.delr.array[j] - area_borehole
-    
-        hk_with_boreholes[leak_layer,i,j] = get_realLeakage(area_borehole, area_model, kf_borehole, lpf.hk.array[leak_layer,i,j])
-        vka_with_boreholes[leak_layer,i,j] = get_realLeakage(area_borehole, area_model, kf_borehole, lpf.vka.array[leak_layer,i,j])
-    else: 
-        print('Well not screened in model layer 3 or higher')
-    
-
-        
-###Overwrite existing lpf package with combined natural+borehole leakage for layer 1        
-lpf = flopy.modflow.ModflowLpf(mf, #layer-property-flow
-                               hk = hk_with_boreholes, 
-                               vka = vka_with_boreholes, 
-                               sy = sy, 
-                               ss = ss, 
-                               laytyp = laytyp,
-                               constantcv = True)
-
-
 #ids = np.arange(80, 80+node_data["wellid"].count()).astype(str)
 #np.array(map(str, ids))
 #"DATA          " + ids + " " + node_data["wellid"].values.astype(str) + ".byn"
@@ -380,7 +337,7 @@ else:
 # Run the model
 success, mfoutput = mf.run_model(silent=False, pause=False)
 if not success:
-    raise Exception('MODFLOW did not terminate normally.')
+    raise Exception('MODFLOW did not terminate normalLx.')
 
     
 plot_layer = 2 
@@ -571,7 +528,6 @@ cs = modelmap.contour_array(head, levels=levels)
 plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
 linecollection = modelmap.plot_grid()
 cb = plt.colorbar(contour_set, shrink=0.4)
-mfc = 'None'
 plt.plot(2050,4950, 
                  lw=0, 
                  marker='o', 
@@ -703,6 +659,9 @@ idx1 = (obsPoint1[0],
 idx1_1 = (obsPoint1_1[0], 
        round(obsPoint1_1[2]/delr,0), 
        round(obsPoint1_1[1]/delc,0))
+
+idx_bot = dis.botm.array[:, int(idx1[1]), int(idx1[2])]
+
 ts = headobj.get_ts(idx1) 
 ts_1 = headobj.get_ts(idx1_1) 
 plt.subplot(1, 1, 1)
@@ -714,6 +673,9 @@ plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
 plt.plot(obs_measured1[:, 0], obs_measured1[:, 1] + botm[nlay-1,int(idx1[1]),int(idx1[2])], color="blue", ls=':', label='Pegel 6B (814193)')
 plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='Pegel 6D (814192)')
+plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_north.png', dpi=300, bbox_inches='tight')
@@ -731,14 +693,20 @@ obsPoint_503372 = [plot_layer, 2875, 400]
 idx2 = (obsPoint_503372[0], 
        round(obsPoint_503372[2]/delr,0), 
        round(obsPoint_503372[1]/delc,0))
+
+idx_bot = dis.botm.array[:, int(idx2[1]), int(idx2[2])]
+                         
 ts = headobj.get_ts(idx2) 
 plt.subplot(1, 1, 1)
-ttl = 'Wasserstand im Modellpunkt x = 28750 m and y = 400 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
+ttl = 'Wasserstand im Modellpunkt x = 2875 m and y = 400 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
 plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(obs_measured_503372[:, 0], obs_measured_503372[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (503372)')
+plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_east.png', dpi=300, bbox_inches='tight')
@@ -756,6 +724,8 @@ obsPoint_502612 = [plot_layer, 2650, 2230]
 idx2 = (obsPoint_502612[0], 
        round(obsPoint_502612[2]/delr,0), 
        round(obsPoint_502612[1]/delc,0))
+
+idx_bot = dis.botm.array[:, int(idx2[1]), int(idx2[2])]
 ts = headobj.get_ts(idx2) 
 plt.subplot(1, 1, 1)
 ttl = 'Wasserstand im Modellpunkt x = 2650 m and y = 2230 m'.format(obsPoint1[0] + 1, obsPoint1[1], obsPoint1[2])
@@ -764,6 +734,9 @@ plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (502612)')
+plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend()
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_centre.png', dpi=300, bbox_inches='tight')
@@ -786,6 +759,8 @@ idx4 = (obsPoint_502442[0],
 idx4_1 = (obsPoint_502441[0], 
        round(obsPoint_502441[2]/delr,0), 
        round(obsPoint_502441[1]/delc,0))
+
+idx_bot = dis.botm.array[:, int(idx4[1]), int(idx4[2])]
 ts = headobj.get_ts(idx4)
 ts_1 = headobj.get_ts(idx4_1)
 plt.subplot(1, 1, 1)
@@ -797,6 +772,9 @@ plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
 plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx4[1]),int(idx4[2])], ls=':', label='Pegel 6B (502442)')
 plt.plot(obs_measured_502441[:, 0], obs_measured_502441[:, 1] + botm[nlay-1,int(idx4_1[1]),int(idx4_1[2])], color="red", ls=':', label='Pegel 6D (502441)')
+plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([0, 3500, 0, 160])
 plt.savefig('time_series_south.png', dpi=300, bbox_inches='tight')
