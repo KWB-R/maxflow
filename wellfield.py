@@ -569,7 +569,8 @@ cs = modelmap.contour_array(head, levels=levels)
 plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
 linecollection = modelmap.plot_grid()
 cb = plt.colorbar(contour_set, shrink=0.4)
-mfc = 'None'plt.plot(2050,4950, 
+mfc = 'None'
+plt.plot(2050,4950, 
                  lw=0, 
                  marker='o', 
                  markersize=3, 
