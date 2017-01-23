@@ -55,6 +55,7 @@ def analyse_model(modelname = 'wellfield',
     nlay = m.dis.nlay
     nper = m.dis.nper
     perlen = m.dis.perlen.array
+    nstp = m.dis.nstp.array
     ### Get layer based budget for each time step
     layer_budget = get_layerbudget(modelname, 
                                    nper, 
