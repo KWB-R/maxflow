@@ -4,7 +4,7 @@ Created on Mon Jan 16 10:58:55 2017
 
 @author: mrustl
 """
-
+import os
 import numpy as np
 import pandas as pd
 import flopy.utils.binaryfile as bf
@@ -15,8 +15,12 @@ def get_layerbudget(modelname,
                     nper, 
                     perlen,
                     nlay, 
+                    model_ws = '.',
                     debug = True
                     ):
+    
+    perlen = np.array(perlen, ndmin=1, copy=False)
+    
     bud_agg = pd.DataFrame(columns=['stress_period',
                               'time_step',
                               'layer',  
@@ -27,7 +31,7 @@ def get_layerbudget(modelname,
                               'FLOW_RIGHT_FACE', 
                               'FLOW_FRONT_FACE',
                               'FLOW_LOWER_FACE'])
-    cbb = bf.CellBudgetFile(modelname+'.cbc')    
+    cbb = bf.CellBudgetFile(os.path.join(model_ws, modelname+'.cbc'))  
     for stress_period in np.arange(0,nper).astype('int'):
         for time_step in np.arange(0,perlen[stress_period]).astype('int'):
             bud = cbb.get_data(kstpkper = (time_step,stress_period), 

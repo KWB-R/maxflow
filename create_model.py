@@ -1,7 +1,8 @@
+import os
 import numpy as np
 import flopy
 import pandas as pd
-
+import sys
 
     
 def vonNeumann_max_dt(transmiss ,
@@ -21,6 +22,27 @@ def get_realLeakage(area_welllocs = 0.3, #meter^2
     return((area_welllocs * kf_welllocs + (area_model - area_welllocs) * kf_natural)/area_model);
 
 
+def create_mnw2_csv_perPeriod(csvdir = '.',
+                              basedir = 'SP'):
+    times = pd.read_csv(os.path.join(csvdir, 'wells_times.csv'))
+    nodes = pd.read_csv(os.path.join(csvdir, 'wells_nodes.csv'))
+    for stress_period in pd.unique(times.per):
+        sp_dir = basedir + str(stress_period)
+        try:
+            print('Directory ' + sp_dir + ' already exists!')
+            os.stat(sp_dir)
+        except:
+            print('Creating directory ' + sp_dir + '!')
+            os.mkdir(sp_dir)   
+        times_per = times.loc[(times.qdes < 0) & (times.per==stress_period)]                            
+        times_per.loc[:,'per'] = 0     
+        times_per.to_csv(os.path.join(sp_dir, 'wells_times.csv'), index = False)   
+        nodes_per = nodes[nodes['wellid'].isin(pd.unique(times_per.wellid))]
+        nodes_per.to_csv(os.path.join(sp_dir, 'wells_nodes.csv'), index = False)
+        print("Writing 'wells_times.csv' and 'wells_nodes.csv' to subfolder " + sp_dir)
+        
+
+
 def create_model(Ly = 5400.,
                  Lx = 4000., 
                  ztop = 200.,
@@ -31,6 +53,7 @@ def create_model(Ly = 5400.,
                  botm_gradient_northSouth = 65/4000, 
                  head_north = np.array([160, 160, 110], dtype=np.float32),
                  head_gradient_northSouth = -40/5400, 
+                 head_array = None, ### takes an array as starting head
                  hk = np.array([2e-5*3600*24, 1e-9*3600*24, 3e-5*3600*24], #horizontal conductivity
                                 dtype=np.float32),
                  vka =  np.array([2e-5*3600*24, 1e-9*3600*24, 3e-5*3600*24], #vertical conductivity
@@ -49,7 +72,8 @@ def create_model(Ly = 5400.,
                  constantcv = True,
                  each_time_step = True, ### if True (for all time steps), if False only for last time 
                  #for each stress period 
-                 modelname = 'wellfield'):
+                 modelname = 'wellfield', 
+                 model_ws='.'):
                      
                      
                 
@@ -92,10 +116,13 @@ def create_model(Ly = 5400.,
     ibound[:, :, -1] = 1
     ibound[0, :, 0] = -1
 
-
-    strt = set_layerbottom(botm_north = head_north, 
+    if head_north is not None:
+        strt = set_layerbottom(botm_north = head_north, 
                            gradient_northSouth = head_gradient_northSouth)
-
+    elif head_north and head_array is not None: 
+        sys.exit("'head_north' and 'head_array' were both defined. Please set one to 'None'")
+    else:
+        strt = head_array
    
 #    max_dt = min(vonNeumann_max_dt(transmiss = hk*delv, 
 #                  s = ss, 
@@ -113,7 +140,8 @@ def create_model(Ly = 5400.,
 
 # Flopy objects
 
-    mf = flopy.modflow.Modflow(modelname)
+    mf = flopy.modflow.Modflow(modelname,
+                               model_ws = model_ws)
     dis = flopy.modflow.ModflowDis(mf, #model discretisation
                                nlay = nlay, 
                                nrow = nrow, 
@@ -147,7 +175,7 @@ def create_model(Ly = 5400.,
 
 ### MNW-2 package
 
-    node_data  = pd.read_csv('wells_nodes.csv')
+    node_data  = pd.read_csv(os.path.join(model_ws, 'wells_nodes.csv'))
 
     node_data["k"] = node_data["k"].astype(int)
     node_data["j"] = (node_data["x"]/delc).astype(int)
@@ -160,7 +188,7 @@ def create_model(Ly = 5400.,
     node_data
 
 
-    stress_period_data  = pd.read_csv('wells_times.csv')
+    stress_period_data  = pd.read_csv(os.path.join(model_ws, 'wells_times.csv'))
 
     wells_info =  pd.merge(left=wells_location,
                        right=stress_period_data, 
@@ -169,7 +197,7 @@ def create_model(Ly = 5400.,
     wells_info = wells_info[wells_info['qdes'] != 0]
 
     pers = stress_period_data.groupby('per')
-    stress_period_data = {i: pers.get_group(i).to_records() for i in range(0,nper)}
+    stress_period_data = {i: pers.get_group(i).to_records() for i in np.arange(0,nper)}
 
     nwells = len(node_data)
                       
@@ -182,7 +210,7 @@ def create_model(Ly = 5400.,
                  )
 
 
-    mnw2.write_file(modelname + ".mnw2")
+    mnw2.write_file(os.path.join(model_ws, modelname + ".mnw2"))
 
     ### Replacing natural leakage with combined leakage value for all wells screened 
     ### below MODFLOW layer 2 (i.e. in flopy: below layer 1) 
@@ -255,10 +283,16 @@ def create_model(Ly = 5400.,
     ###Adding MNW2 & MWNI in MODFLOW input file 
     if 'mnw2' in locals():
         print("Writing MNW2 & MNWI package to " + modelname + ".nam file")
-        with open(modelname + ".nam", 'a') as f:
+        with open(os.path.join(model_ws, modelname + ".nam"), 'a') as f:
             f.write('MNW2          23 ' + modelname + '.mnw2')
             f.write('\nMNWI          79 ' + modelname + '.mnwi')
             f.write('\nDATA          82 ' + modelname + '.byn')
+            f.close
+        print("Writing MNWI file " + modelname + ".mnwi file")
+        with open(os.path.join(model_ws, modelname + ".mnwi"), 'w') as f2:
+            f2.write('0 0 82          ; 1. Wel1flag, QSUMflag, BYNDflag')
+            f2.write('\n0               ; 2. MNWOBS')
+            f2.close
     else:
         print("Not using MNW2 & MNWI package")
 

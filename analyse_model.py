@@ -40,17 +40,17 @@ def get_mnw2_info(mf):
         
 
 def analyse_model(modelname = 'wellfield',
+                  model_ws = '.',
                   plot_layer = 2):
 
-    m = flopy.modflow.Modflow.load(modelname + '.nam')
-    
-       
+    m = flopy.modflow.Modflow.load(os.path.join(model_ws, modelname + '.nam'))
+           
     wells_info = get_mnw2_info(m)
     
      # Get the headfile and budget file objects
-    headobj = bf.HeadFile(modelname+'.hds')
+    headobj = bf.HeadFile(os.path.join(model_ws, modelname+'.hds'))
     times = headobj.get_times()
-    cbb = bf.CellBudgetFile(modelname+'.cbc')
+    cbb = bf.CellBudgetFile(os.path.join(model_ws, modelname+'.cbc'))
 
     nlay = m.dis.nlay
     nper = m.dis.nper
@@ -61,7 +61,8 @@ def analyse_model(modelname = 'wellfield',
                                    nper, 
                                    perlen, 
                                    nlay, 
-                                   debug = True)
+                                   model_ws)
+    
 
 
     ### Aggregate budget for layer for whole simulation
@@ -74,7 +75,7 @@ def analyse_model(modelname = 'wellfield',
     ### Filter only lowest layer
     layer3_budget_perStressPeriod = layer_budget_perStressPeriod[layer_budget_perStressPeriod['layer'] == 2]
 
-    mf_list = flopy.utils.MfListBudget(modelname+".list")
+    mf_list = flopy.utils.MfListBudget(os.path.join(model_ws, modelname+".list"))
     budget_incremental, budget_cumulative = mf_list.get_dataframes(start_datetime='31-12-2006')
 
     layer3_budget_perStressPeriod['MNW2_IN'] = np.append(budget_cumulative['MNW2_IN'][0],
@@ -124,7 +125,7 @@ def analyse_model(modelname = 'wellfield',
     plt.ylabel('m3')
     plt.xlabel('Stressperiode')
     plt.xticks(layer3_budget_perStressPeriod['stress_period'])
-    plt.savefig('budget_layer3.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(model_ws, 'budget_layer3.png'), dpi=300, bbox_inches='tight')
     plt.show()
 
 
@@ -349,7 +350,7 @@ def analyse_model(modelname = 'wellfield',
              markeredgecolor='black', 
              markerfacecolor=mfc, 
              zorder=9)
-    plt.savefig('Restwasser.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(model_ws, 'Restwasser.png'), dpi=300, bbox_inches='tight')
     plt.show()
     
     ###Plot the head versus time
@@ -391,7 +392,7 @@ def analyse_model(modelname = 'wellfield',
     plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.axis([0, 3500, 0, 160])
-    plt.savefig('time_series_north.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(model_ws, 'time_series_north.png'), dpi=300, bbox_inches='tight')
     plt.show()
     
     ### Import measured observation point 2
@@ -422,7 +423,7 @@ def analyse_model(modelname = 'wellfield',
     plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
     plt.legend()
     plt.axis([0, 3500, 0, 160])
-    plt.savefig('time_series_east.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(model_ws, 'time_series_east.png'), dpi=300, bbox_inches='tight')
     plt.show()
     
     ### Import measured observation point 3
@@ -452,7 +453,7 @@ def analyse_model(modelname = 'wellfield',
     plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
     plt.legend()
     plt.axis([0, 3500, 0, 160])
-    plt.savefig('time_series_centre.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(model_ws, 'time_series_centre.png'), dpi=300, bbox_inches='tight')
     plt.show()
     
     ### Import measured observation point 4
@@ -490,11 +491,11 @@ def analyse_model(modelname = 'wellfield',
     plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.axis([0, 3500, 0, 160])
-    plt.savefig('time_series_south.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(model_ws, 'time_series_south.png'), dpi=300, bbox_inches='tight')
     plt.show()
     
     #budget graphs
-    mf_list = flopy.utils.MfListBudget(modelname+".list")
+    mf_list = flopy.utils.MfListBudget(os.path.join(model_ws, modelname+".list"))
     budget = mf_list.get_budget()
     for stress_period in range(0,nper):
         print(stress_period)
@@ -527,7 +528,7 @@ def analyse_model(modelname = 'wellfield',
     plt.ylabel('m3')
     plt.xlabel('Stressperiode')
     plt.xticks(stpers)
-    #plt.savefig('budget.png', dpi=300)
+    plt.savefig(os.path.join(model_ws, 'budget.png'), dpi=300)
     plt.show()
     
     ztop = max(m.dis.top.array[0])
@@ -544,7 +545,7 @@ def analyse_model(modelname = 'wellfield',
     plt.ylabel('m')
     plt.xlabel('m')
     plt.axis([0, Lx, 0, ztop])
-    plt.savefig('xsect.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(model_ws, 'xsect.png'), dpi=300, bbox_inches='tight')
     plt.show()
     
     #t = ax.set_title('Column 6 Cross-Section - Model Grid')
@@ -562,7 +563,7 @@ def analyse_model(modelname = 'wellfield',
     plt.ylabel('m')
     plt.xlabel('m')
     plt.axis([0, Ly, 0, ztop])
-    plt.savefig('ysect.png', dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(model_ws, 'ysect.png'), dpi=300, bbox_inches='tight')
     plt.show()
     #t = ax.set_title('Column 6 Cross-Section - Model Grid')
     
