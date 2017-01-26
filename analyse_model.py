@@ -3,9 +3,22 @@ import matplotlib.pyplot as plt
 import os
 import flopy
 import flopy.utils.binaryfile as bf
+from datetime import datetime
 from get_layerBudget import *
 
 
+def get_simulationStart_offset(obs_start_date = '1/01/2007',
+                             sim_start_date = '1/01/2007',
+                             date_format = "%d/%m/%Y"):
+    obs_start_date = datetime.strptime(obs_start_date, date_format)
+    sim_start_date = datetime.strptime(sim_start_date, date_format)
+    
+    delta = sim_start_date - obs_start_date
+    
+    return(delta.days)
+
+
+    
 def getStressPeriod(time, 
                     stress_period_ende):
         
@@ -41,10 +54,12 @@ def get_mnw2_info(mf):
 
 def analyse_model(modelname = 'wellfield',
                   model_ws = '.',
-                  plot_layer = 2):
+                  plot_layer = 2, 
+                  obs_start_date = '1/01/2007'):
 
     m = flopy.modflow.Modflow.load(os.path.join(model_ws, modelname + '.nam'))
-           
+    
+    
     wells_info = get_mnw2_info(m)
     
      # Get the headfile and budget file objects
@@ -355,6 +370,11 @@ def analyse_model(modelname = 'wellfield',
     
     ###Plot the head versus time
     
+    offset_simstart_days = get_simulationStart_offset(obs_start_date = obs_start_date,
+                             sim_start_date = m.dis.start_datetime,
+                             date_format = "%d/%m/%Y")
+       
+    
     ### Import measured observation point 1
     obs_measured1  = np.loadtxt('obs_head_time_814193.csv', 
                                delimiter=",",
@@ -383,8 +403,8 @@ def analyse_model(modelname = 'wellfield',
     plt.title(ttl)
     plt.xlabel('Zeit in Tagen')
     plt.ylabel('Wasserstand in m')
-    plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
-    plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
+    plt.plot(offset_simstart_days + ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
+    plt.plot(offset_simstart_days + ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
     plt.plot(obs_measured1[:, 0], obs_measured1[:, 1] + botm[nlay-1,int(idx1[1]),int(idx1[2])], color="blue", ls=':', label='Pegel 6B (814193)')
     plt.plot(obs_measured1_1[:, 0], obs_measured1_1[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='Pegel 6D (814192)')
     plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
@@ -416,7 +436,7 @@ def analyse_model(modelname = 'wellfield',
     plt.title(ttl)
     plt.xlabel('Zeit in Tagen')
     plt.ylabel('Wasserstand in m')
-    plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
+    plt.plot(offset_simstart_days + ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
     plt.plot(obs_measured_503372[:, 0], obs_measured_503372[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (503372)')
     plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
     plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
@@ -446,7 +466,7 @@ def analyse_model(modelname = 'wellfield',
     plt.title(ttl)
     plt.xlabel('Zeit in Tagen')
     plt.ylabel('Wasserstand in m')
-    plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
+    plt.plot(offset_simstart_days + ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
     plt.plot(obs_measured_502612[:, 0], obs_measured_502612[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (502612)')
     plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
     plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
@@ -482,8 +502,8 @@ def analyse_model(modelname = 'wellfield',
     plt.title(ttl)
     plt.xlabel('Zeit in Tagen')
     plt.ylabel('Wasserstand in m')
-    plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
-    plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
+    plt.plot(offset_simstart_days + ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
+    plt.plot(offset_simstart_days + ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
     plt.plot(obs_measured_502442[:, 0], obs_measured_502442[:, 1] + botm[nlay-1,int(idx4[1]),int(idx4[2])], ls=':', label='Pegel 6B (502442)')
     plt.plot(obs_measured_502441[:, 0], obs_measured_502441[:, 1] + botm[nlay-1,int(idx4_1[1]),int(idx4_1[2])], color="red", ls=':', label='Pegel 6D (502441)')
     plt.axhline(y=idx_bot[0], color='grey', linestyle='-')

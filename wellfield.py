@@ -8,26 +8,33 @@ from analyse_model import *
 from get_layerBudget import *
 
 # 0) Creating MNW file with R (still open to be integrated!)
-#
-#
-# currently the "wells_times.csv" and "wells_nodes.csv" in the project root 
-# are created by using: 
-# "create_mnw2_csvs.R" (code refactoring branch): for creating "wells_times.csv" and "wells_nodes.csv"
-# But subsequently "wells_times_scenarios.xlsx" (master branch) is currently 
-# used for replacing the file "wells_times.csv" with more accurate pumping rates 
-# for 6B (based on calculations by C.Menz)
+
+Ly = 5400.
+Lx = 4000. 
+
+upleft_coord = calc_model_wellcoordinates(Ly = Ly, 
+                                          Lx = Lx, 
+                                          csvDir = '.',
+                                          csvFile = 'wells_nodes.csv',
+                                          exp_dir = '.')
+
+xul = upleft_coord['xul']
+yul = upleft_coord['yul']
+proj4_str = 'ESPG:31466'
 
 ###############################################################################
 ##### Scenario 1: Combined leakage with constant kf for 9 stress periods
 ###############################################################################
+
+
 print("###############################################################################")
 print("Scenario 1: Combined leakage with constant kf for 9 stress periods")
 print("###############################################################################\n")
 # 1) Create model 
 print("Step 1: Create MODFLOW model")
-mf = create_model(Ly = 5400.,
-             Lx = 4000., 
-             ztop = 200.,
+mf = create_model(Ly = Ly, 
+                  Lx = Lx,
+                  ztop = 200.,
              zbot_north = 0.,
              nlay = 3,
              grid_spacing = 50,
@@ -54,7 +61,11 @@ mf = create_model(Ly = 5400.,
              each_time_step = True, ### if True (for all time steps), if False only for last time 
                  #for each stress period 
              modelname = 'wellfield', 
-             model_ws = '.')
+             model_ws = '.',
+             xul = xul,
+             yul = yul,
+             proj4_str = proj4_str,
+             start_datetime = '1/1/2007')
                  
                  
 # 2) Run the model
@@ -66,7 +77,8 @@ if not success:
 # 3) Analyse model results (see analyse_model.py)
 print("Step 3: Analyse MODFLOW results (see analyse_model.py)")
 analyse_model(modelname = 'wellfield', 
-              plot_layer = 2)
+              plot_layer = 2,
+              obs_start_date = '1/01/2007')
 
                  
 
@@ -85,8 +97,6 @@ create_mnw2_csv_perPeriod(csvdir = '.',  ### location of org.  well_times.csv & 
                           )
 
 #### Define constant model parameters:
-Ly = 5400.
-Lx = 4000.
 ztop = 200.
 zbot_north = 0.
 nlay = 3
@@ -116,12 +126,13 @@ modelname = 'wellfield'
 for stress_period in range(0,9):
     ### Define model folder for each stress period
     model_ws = 'SP' + str(stress_period)
+    start_datetime = '1/1/' + str(2007 + stress_period)
     # 1) Create model 
     print("Step 1: Create MODFLOW model for stress period " + str(stress_period))
 
     if stress_period == 0:
         mf = create_model(Ly = Ly,
-             Lx = Ly, 
+             Lx = Lx, 
              ztop = ztop,
              zbot_north = zbot_north,
              nlay = nlay,
@@ -145,7 +156,11 @@ for stress_period in range(0,9):
              constantcv = constantcv,
              each_time_step =  each_time_step, 
              modelname = modelname, 
-             model_ws = model_ws)
+             model_ws = model_ws,
+             xul = xul,
+             yul = yul,
+             proj4_str = proj4_str, 
+             start_datetime = start_datetime)
                  
     
     else:
@@ -154,7 +169,7 @@ for stress_period in range(0,9):
         times = headobj.get_times()
         head = headobj.get_data(totim=times[len(times)-1])
         mf = create_model(Ly = Ly,
-             Lx = Ly, 
+             Lx = Lx, 
              ztop = ztop,
              zbot_north = zbot_north,
              nlay = nlay,
@@ -178,7 +193,11 @@ for stress_period in range(0,9):
              constantcv = constantcv,
              each_time_step =  each_time_step, 
              modelname = modelname, 
-             model_ws = model_ws)
+             model_ws = model_ws,
+             xul = xul,
+             yul = yul,
+             proj4_str = proj4_str, 
+             start_datetime = start_datetime)
                  
     # 2) Run the model
     print("Step 2: Run MODFLOW model for stress period " + str(stress_period))
@@ -190,7 +209,8 @@ for stress_period in range(0,9):
     print("Step 3: Analyse MODFLOW results (see analyse_model.py)")
     analyse_model(modelname = modelname, 
                   model_ws = model_ws,
-                  plot_layer = 2)
+                  plot_layer = 2,
+                  obs_start_date = '1/01/2007')
 
 
             

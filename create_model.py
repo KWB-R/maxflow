@@ -22,6 +22,37 @@ def get_realLeakage(area_welllocs = 0.3, #meter^2
     return((area_welllocs * kf_welllocs + (area_model - area_welllocs) * kf_natural)/area_model);
 
 
+def calc_model_wellcoordinates(Ly, 
+                               Lx, 
+                               csvDir = '.',
+                               csvFile = 'wells_nodes.csv',
+                               exp_dir = '.'):
+    
+    
+    wells_nodes  = pd.read_csv(os.path.join(csvDir, csvFile))
+    
+    if 'x' not in wells_nodes:
+         wells_nodes['x'] = 0
+    if 'y' not in wells_nodes:
+         wells_nodes['y'] = 0
+    
+    wells_nodes.loc[:, ['x']] =  wells_nodes['X_WERT'] - wells_nodes['X_WERT'].min() 
+    wells_nodes.loc[:, ['x']] =  wells_nodes['x'] + (Lx - wells_nodes['x'].max()) - 200
+
+    ### gleicher  Abstand von oberer/unterer Rand
+    wells_nodes.loc[:, ['y']] =  wells_nodes['Y_WERT'] - wells_nodes['Y_WERT'].min()
+    wells_nodes.loc[:, ['y']] =  wells_nodes['y'].max() - wells_nodes['y'] + (Ly - wells_nodes['y'].max())/2
+
+    wells_nodes.to_csv(os.path.join(exp_dir, 'wells_nodes.csv'), index = False)
+    
+    xul = float(wells_nodes.loc[0, ['X_WERT']].values-wells_nodes.loc[0, ['x']].values)
+    yul = float(wells_nodes.loc[0, ['Y_WERT']].values+wells_nodes.loc[0, ['y']].values)
+    
+    coord_dict = {"xul" : xul, "yul": yul}
+    
+    return(coord_dict)
+
+
 def create_mnw2_csv_perPeriod(csvdir = '.',
                               basedir = 'SP'):
     times = pd.read_csv(os.path.join(csvdir, 'wells_times.csv'))
@@ -73,7 +104,11 @@ def create_model(Ly = 5400.,
                  each_time_step = True, ### if True (for all time steps), if False only for last time 
                  #for each stress period 
                  modelname = 'wellfield', 
-                 model_ws='.'):
+                 model_ws='.',
+                 xul = None,
+                 yul = None, 
+                 proj4_str = 'EPSG:31466',
+                 start_datetime = '1/1/1970'):
                      
                      
                 
@@ -154,7 +189,11 @@ def create_model(Ly = 5400.,
                                perlen = perlen, 
                                nstp = nstp,
                                tsmult = 1, 
-                               steady = steady)
+                               steady = steady,
+                               xul = xul, 
+                               yul = yul, 
+                               proj4_str = proj4_str,
+                               start_datetime = start_datetime)
                                
     bas = flopy.modflow.ModflowBas(mf, 
                                ibound = ibound, #boundary conditions
@@ -295,11 +334,13 @@ def create_model(Ly = 5400.,
             f2.close
     else:
         print("Not using MNW2 & MNWI package")
+        
+        
+    ## Export model data as shapefile
+    #mf.lpf.hk.export(os.path.join('hk.shp'))
+    mf.export(os.path.join(model_ws, modelname + '.shp'))
 
     return(mf)
 
 
 
-## Export model data as shapefile
-#mf.lpf.hk.export(os.path.join('hk.shp'))
-#mf.export(os.path.join('model.shp'))
