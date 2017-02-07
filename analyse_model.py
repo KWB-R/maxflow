@@ -301,23 +301,28 @@ def analyse_model(modelname = 'wellfield',
              zorder=9)
     plt.show()
     
-    ##Restwasser
+    ##Restwasser 6B
     botm =  m.dis.botm.array
-    mytitle = 'Restwassermächtigkeit im 6B in 2015' # + str(plot_layer) + ' bottom elevation after '+ str(time) + ' days of simulation'
+    mytitle = 'GW-Gleichen und Restwassermächtigkeit im 6B in 2015' # + str(plot_layer) + ' bottom elevation after '+ str(time) + ' days of simulation'
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(1, 1, 1, aspect='equal')
     title = ax.set_title(mytitle)
-    modelmap = flopy.plot.ModelMap(model=m, rotation=0)
-    quadmesh = modelmap.plot_ibound()
-    contour_set = modelmap.plot_array(head[plot_layer,:,:]-botm[plot_layer], 
-                                      masked_values=[-1e+30], 
-                                      alpha=0.5)
+    modelmap = flopy.plot.ModelMap(model=mf, rotation=0)
+    #quadmesh = modelmap.plot_ibound()
+    #contour_set = modelmap.plot_array(head[plot_layer,:,:]-botm[plot_layer], 
+    #                                  masked_values=[-1e+30], 
+    #                                  alpha=0.5)
     #levels = np.linspace(0, 80, 17)
     #extent = (delr/2., Ly - delr/2., delc/2., Lx - delc/2.)
     #print('Levels: ', levels)
     #print('Extent: ', extent)
-    #cs = modelmap.contour_array(head[plot_layer,:,:]-botm[plot_layer], levels=levels)
-    #plt.clabel(cs, inline=1, fontsize=10, fmt='%1.1f', zorder=11)
+    rw = modelmap.contour_array(head[plot_layer,:,:]-botm[plot_layer], levels=levels, colors= 'brown')
+    levels = np.linspace(-100, 20, 25)
+    hh = modelmap.contour_array(head[plot_layer,:,:]-110, levels=levels, colors= 'blue', linestyles='solid')
+    plt.clabel(rw, inline=1, fontsize=10, fmt='%1.f', zorder=11)
+    plt.clabel(hh, inline=1, fontsize=10, fmt='%1.f', zorder=11)
+#linecollection = modelmap.plot_grid()
+#cb = plt.colorbar(contour_set, shrink=0.4)
     linecollection = modelmap.plot_grid()
     cb = plt.colorbar(contour_set, shrink=0.4)
     plt.plot(2050,4950, 
