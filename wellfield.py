@@ -476,6 +476,8 @@ extent = (delr/2., Ly - delr/2., delc/2., Lx - delc/2.)
 print('Levels: ', levels)
 print('Extent: ', extent)
 
+timeslist = [t_perPeriod,t_perPeriod*2, t_perPeriod*3, t_perPeriod*4, t_perPeriod*5,t_perPeriod*6,t_perPeriod*7,t_perPeriod*7,t_perPeriod*8,t_perPeriod*9,t_perPeriod*10,t_perPeriod*11,t_perPeriod*12]
+
 # Well point
 
 def getStressPeriod(time, 
@@ -489,7 +491,7 @@ def getStressPeriod(time,
     
 
 # Make the plots
-for iplot, time in enumerate(times):
+for iplot, time in enumerate(timeslist):
     print('*****Processing time: ', time)
     
     ### Get head data
