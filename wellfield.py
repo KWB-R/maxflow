@@ -513,7 +513,7 @@ for iplot, time in enumerate(timeslist):
     #Create the plot
     #plt.subplot(1, len(mytimes), iplot + 1, aspect='equal')
     plt.subplot(1, 1, 1, aspect='equal')
-    plt.title('total time: ' + str(time) + ' days\n(Stress period: ' + str(str_per) + ")")
+    plt.title('Jahr: ' + str(int(time/365+2006)) + ' \n(Stressperiode: ' + str(str_per) + ")")
     modelmap = flopy.plot.ModelMap(model=mf, layer=plot_layer)
     qm = modelmap.plot_ibound()
     lc = modelmap.plot_grid()
