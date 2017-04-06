@@ -512,8 +512,9 @@ for iplot, time in enumerate(timeslist):
 
     #Create the plot
     #plt.subplot(1, len(mytimes), iplot + 1, aspect='equal')
+    fig = plt.figure(figsize=(5, 5))
     plt.subplot(1, 1, 1, aspect='equal')
-    plt.title('Jahr: ' + str(int(time/365+2006)) + ' \n(Stressperiode: ' + str(str_per) + ")")
+    plt.title('Jahr: ' + str(int(time/365+2006)) + ' \n(Stressperiode: ' + str(str_per+1) + ")")
     modelmap = flopy.plot.ModelMap(model=mf, layer=plot_layer)
     qm = modelmap.plot_ibound()
     lc = modelmap.plot_grid()
@@ -524,13 +525,37 @@ for iplot, time in enumerate(timeslist):
 #    mfc = 'None'
 #    if (iplot+1) == len(times):
     mfc='black'
-    plt.plot(2050,4950, 
+    plt.plot(1400+xoff,3500, 
                  lw=0, 
                  marker='o', 
-                 markersize=3, 
+                 markersize=5, 
                  markeredgewidth=1,
                  markeredgecolor='red', 
-                 markerfacecolor=mfc, 
+                 markerfacecolor='red', 
+                 zorder=9)
+    plt.plot(1900+xoff,2000, 
+                 lw=0, 
+                 marker='o', 
+                 markersize=5, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor='red', 
+                 zorder=9)
+    plt.plot(2529636-xul+xoff,Ly-(yul-5658103), 
+                 lw=0, 
+                 marker='o', 
+                 markersize=5, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor='red', 
+                 zorder=9)
+    plt.plot(2530385-xul+xoff,Ly-(yul-5658172), 
+                 lw=0, 
+                 marker='o', 
+                 markersize=5, 
+                 markeredgewidth=1,
+                 markeredgecolor='red', 
+                 markerfacecolor='red', 
                  zorder=9)
     if 'mnw2' in locals():
         print("Using MNW2 package and plotting active wells")

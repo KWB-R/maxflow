@@ -2,7 +2,21 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 library(lattice)
-setwd("C:/Users/mrustl/Desktop/WC_Maxflow/branches/3-nat_layer_real_wells")
+library(ggplot2)
+library(devtools)
+if(!require("gganimate")) { 
+  devtools::install_github("dgrtwo/gganimate", dependencies = TRUE)
+}
+library(gganimate)
+
+setwd("C:/Users/cmenz/Desktop/WC_Maxflow/branches/combined_leakage")
+
+well_master <- read.csv(file = "wells_nodes.csv",header = TRUE) %>% 
+               dplyr::filter(k == 2) %>% 
+               dplyr::mutate(wellid = toupper(wellid)) %>% 
+               dplyr::rename(WELLID = wellid) %>%
+               dplyr::select(WELLID, X_WERT, Y_WERT, Brkenn)
+
 
 wells <- data.table::fread(input = "wellfield.byn", fill = TRUE)
 
@@ -15,15 +29,58 @@ save(wells, file = "wells.RData")
 
 #load("wells.RData")
 
+wells_perYear <- wells %>% 
+  #filter(WELLID == "WELL26") %>% 
+  mutate(Totim = floor((Totim-1)/365)) %>% 
+  group_by(WELLID, Totim) %>% 
+  summarise(Q_node_cubicmpermin = round(-sum(Q_node)/(365*24*60),2), 
+            hwell_median = median(hwell), 
+            hcell_median = median(hcell)) %>% 
+  right_join(y = well_master)
 
 
-wells_perDay <- wells %>% 
-         #filter(WELLID == "WELL26") %>% 
-         mutate(Totim = round(Totim,0)) %>% 
-         group_by(WELLID, Totim) %>% 
-         summarise(Q_node_median = median(Q_node), 
-                   hwell_median = median(hwell), 
-                   hcell_median = median(hcell))
+entnahme_pro_jahr <-wells_perYear %>% 
+  ungroup() %>% 
+  group_by(Totim) %>% 
+  summarise(Gesamtfoerderung = sum(Q_node_cubicmpermin)) %>% 
+  mutate(label = sprintf("Jahr: %d (Gesamtfoerderung 6B: %3.1f Millionen m3)", 
+                         Totim+2007, 
+                         round((Gesamtfoerderung*24*60*365)/1000000,1)))
+
+wells_perYear <- wells_perYear %>% 
+                 dplyr::left_join(y = entnahme_pro_jahr)
+
+#animation
+p <- ggplot(wells_perYear, aes(x=X_WERT, 
+                               y=Y_WERT, 
+                               size = Q_node_cubicmpermin,  
+                               frame = label)) + 
+  geom_point(col = "darkblue", ) + 
+  labs(x = "X Koordinate", 
+       y = "Y Koordinate") + 
+  theme_bw() +
+  geom_text_repel(aes(label=wellid), size = 3)
+
+
+print(p)
+
+gganimate(p, "entnahme.html",
+          ani.width = 1000, 
+          ani.height =1080)
+
+plot(Q_perYear ~ Year, 
+     data=entnahme_pro_jahr, 
+     type="b", 
+     col="blue", 
+     las = 1)
+
+# wells_perDay <- wells %>% 
+#          #filter(WELLID == "WELL26") %>% 
+#          mutate(Totim = round(Totim,0)) %>% 
+#          group_by(WELLID, Totim) %>% 
+#          summarise(Q_node_median = median(Q_node), 
+#                    hwell_median = median(hwell), 
+#                    hcell_median = median(hcell))
 
 
 wells_summary <- wells_perDay %>% 
@@ -37,7 +94,7 @@ wells_summary <- wells_perDay %>%
 wells_summary %>%  
   ggplot(aes(x = days_active, y = Q_node_median/24/60)) + 
   geom_point(alpha = 0.5, size = 2) + 
-  labs(y = "Foerderrate pro Minute (m3/min)") +
+  labs(y = "Foerderrate pro Minute (m³/min)") +
   theme_bw()
 
 # Q sum per well for whole simulation
