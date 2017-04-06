@@ -58,9 +58,7 @@ p <- ggplot(wells_perYear, aes(x=X_WERT,
   geom_point(col = "darkblue", ) + 
   labs(x = "X Koordinate", 
        y = "Y Koordinate") + 
-  theme_bw() +
-  geom_text_repel(aes(label=wellid), size = 3)
-
+  theme_bw()
 
 print(p)
 
@@ -73,6 +71,10 @@ plot(Q_perYear ~ Year,
      type="b", 
      col="blue", 
      las = 1)
+
+write.csv(wells_perYear, 
+          "wells_Qperyear.csv",
+          row.names = FALSE)
 
 # wells_perDay <- wells %>% 
 #          #filter(WELLID == "WELL26") %>% 

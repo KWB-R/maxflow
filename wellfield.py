@@ -395,6 +395,7 @@ import flopy.utils.binaryfile as bf
 headobj = bf.HeadFile(modelname+'.hds')
 times = headobj.get_times()
 cbb = bf.CellBudgetFile(modelname+'.cbc')
+wells = bf.
 
 ### Get layer based budget for each time step
 layer_budget = get_layerbudget("wellfield", 
