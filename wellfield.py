@@ -4,10 +4,29 @@ import os
 import pandas as pd
 import math
 from get_layerBudget import *
+from create_model import calc_model_wellcoordinates
+
 
 # Model domain and grid definition
+
 Ly = 5400.
-Lx = 5000.
+Lx = 5000. 
+
+upleft_coord = calc_model_wellcoordinates(Ly = Ly, 
+                                          Lx = Lx, 
+                                          csvDir = '.',
+                                          csvFile = 'wells_nodes.csv',
+                                          exp_dir = '.')
+
+xul = upleft_coord['xul']
+yul = upleft_coord['yul']
+
+#xul = 2528190
+#yul = 5662180
+
+proj4_str = 'ESPG:31466'
+
+
 ztop = 200.
 zbot = 0.
 nlay = 3
@@ -19,6 +38,7 @@ nrow = int(Ly / delr)
 ncol = int(Lx / delc)
 start_datetime = '1/1/2007'
 xoff = 1000
+
 
 ###layer decline
 def set_layerbottom(botm_north, 
@@ -395,7 +415,6 @@ import flopy.utils.binaryfile as bf
 headobj = bf.HeadFile(modelname+'.hds')
 times = headobj.get_times()
 cbb = bf.CellBudgetFile(modelname+'.cbc')
-wells = bf.
 
 ### Get layer based budget for each time step
 layer_budget = get_layerbudget("wellfield", 
@@ -648,9 +667,6 @@ time = times[len(times)-1]
 #                 markerfacecolor=mfc, 
 #                 zorder=9)
 #plt.show()
-
-xul = 2528190
-yul = 5662180
 
 ##Restwasser 6B
 mytitle = 'GW-Gleichen und Restwassermächtigkeit im 6B in 2015' # + str(plot_layer) + ' bottom elevation after '+ str(time) + ' days of simulation'
