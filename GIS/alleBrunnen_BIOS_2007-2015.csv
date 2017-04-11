@@ -1,4 +1,4 @@
-per,wellid,qdes,Brunnen,X_WERT,Y_WERT,y,x,id,k,losstype,pumploc,qlimit,ppflag,pumpcap,rw,hlim,qcut,starttime,endtime
+per,wellid,qdes,Brkenn,X_WERT,Y_WERT,y,x,id,k,losstype,pumploc,qlimit,ppflag,pumpcap,rw,hlim,qcut,starttime,endtime
 0,well1,0,W 5001,2531951.12,5659201.03,2985.84,4760.19,1,2,thiem,0,0,0,0,0.5,6,0,12,12
 0,well10,0,W 5051,2531724.11,5660979.66,1207.21,4533.18,10,2,thiem,0,0,0,0,0.5,6,0,1,11
 0,well100,0,W 5407,2531446.69,5660951.44,1235.43,4255.76,100,2,thiem,0,0,0,0,0.5,6,0,3,9
