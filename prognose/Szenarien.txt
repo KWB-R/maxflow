@@ -1,0 +1,12 @@
+Szenarienbeschreibung
+
+S1: Faktor Q_mom <- 1.0, Raster <- Plan
+S2: Faktor Q_mom <- 0.8, Raster <- Plan
+S3: Faktor Q_mom <- 0.7, Raster <- Plan
+S4: Faktor Q_mom <- 0.6, Raster <- Plan
+S5: Faktor Q_mom <- 0.5, Raster <- Plan
+S6: Faktor Q_mom <- 0.4, Raster <- Plan
+S7: Faktor Q_mom <- 0.3, Raster <- Plan
+S8: Faktor Q_mom <- 0.2, Raster <- Plan
+S9: Faktor Q_mom <- 0.1, Raster <- Plan
+
