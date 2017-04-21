@@ -1,7 +1,7 @@
 library(dplyr)
 library(reshape2)
 
-
+setwd("C:/Users/RE73858/Desktop/WC_Maxflow/Maxflow-master")
 
 ### Benoetigt, da MNW2 erwartet, dass Anzahl der Brunnen je Stressperiode = Gesamtbrunnenanzahl
 wells_time_dummy <- function(wells_nodes, pers = 0:11) {
@@ -21,7 +21,7 @@ wells_time_dummy <- function(wells_nodes, pers = 0:11) {
   return(res)  
 }
 
-
+## Auffüllen des Prognosezeitraums mit Förderraten aus dem letzten Jahr der Kalibrierung 
 add_last_q <- function(df_old_times, # altbrunnen_times 
                        df_inOperation, #altbrunnen
                        max_per = 11) {
@@ -69,6 +69,7 @@ add_last_q <- function(df_old_times, # altbrunnen_times
   return(res)
 }
 
+## Einlesen der Brunnen für Kalibrierungszeitraum ##
 
 altbrunnen <- read.csv("GIS/alleBrunnen_BIOS_2007-2015.csv",
                        stringsAsFactors = FALSE) %>% 
@@ -86,6 +87,7 @@ altbrunnen_nodes <- altbrunnen %>%
                     dplyr::ungroup() %>% 
                     dplyr::mutate(wellid = sprintf("welll%d",1:n()))
 
+## Einlesen der Förderraten für Kalibrierungszeitraum ##
 
 altbrunnen_times <- altbrunnen %>% 
                     dplyr::select_("Brkenn", 
@@ -101,11 +103,12 @@ altbrunnen_times <- altbrunnen %>%
                                    "qdes"
                                    )  
 
-altbrunnen_times <- rbind(altbrunnen_times, 
-                          add_last_q(df_old_times = altbrunnen_times, 
+altbrunnen_times <- rbind(altbrunnen_times,
+                          add_last_q(df_old_times = altbrunnen_times,
                                      df_inOperation = altbrunnen,
                                      max_per = 11))
 
+## Einlesen der Brunnen für Prognosezeitraum ##
 
 neubrunnen_nodes <- read.csv("GIS/alleBrunnen_2016-2018.csv", 
                              stringsAsFactors = FALSE) %>% 
@@ -117,6 +120,7 @@ neubrunnen_nodes <- read.csv("GIS/alleBrunnen_2016-2018.csv",
   dplyr::summarise(X_WERT = min(X_WERT),
                    Y_WERT = min(Y_WERT)) 
 
+## Einlesen der Förderraten für Prognoseszeitraum ##
 
 neubrunnen_times <- read.csv("GIS/alleBrunnen_Wabis_bis 2020.csv") %>%  
   dplyr::mutate(Year = Iz + 1970) %>% 
@@ -131,9 +135,10 @@ neubrunnen_nodes <- neubrunnen_nodes %>%
   dplyr::mutate(wellid = sprintf("welll%d",
                                  (nrow(altbrunnen_nodes) + 1):(nrow(altbrunnen_nodes) + n())))
 
+Q_mom <- 1.0  # Faktor für Förderrate der Neuanlagen aus GWL 6B im Prognosezeitraum
 
 neubrunnen_times <- neubrunnen_times %>% 
-                    dplyr::mutate(qdes = Qbr*24*60,
+                    dplyr::mutate(qdes = Qbr*24*60*Q_mom,  
                                   per = Year - 2007) %>% 
                     dplyr::left_join(neubrunnen_nodes %>% select(Brkenn, wellid)) %>% 
                       dplyr::select_("per", 
@@ -142,6 +147,7 @@ neubrunnen_times <- neubrunnen_times %>%
                                      "Brkenn",
                                      "qdes"
                       )  
+## Erstellung der modflow input datei well_nodes ##
 
 wells_nodes <- rbind(altbrunnen_nodes,neubrunnen_nodes) %>% 
                dplyr::mutate(losstype = "thiem",
@@ -152,6 +158,8 @@ wells_nodes <- rbind(altbrunnen_nodes,neubrunnen_nodes) %>%
                             rw = 0.5,
                             hlim = 6,
                             qcut = 0)
+
+## Erstellung der modflow input datei well_times ##
 
 wells_times <- rbind(altbrunnen_times,neubrunnen_times)
 
@@ -167,10 +175,11 @@ wells_times <- wells_time_dummy(wells_nodes,pers = 0:max_per) %>%
 
 #wells_times %>% group_by(wellid,per) %>% summarise(n = n()) %>% filter(n > 1) %>% View()
 
+## Änderung des Brunnenrasters ##
 
 if (FALSE) {
   
-well_number <- function(critDist = 100,
+well_number <- function(critDist = 200,
                         df = neubrunnen_nodes %>% filter(k == 0)) {
 
   distanceMatrix <- round(dist(df[,c("X_WERT","Y_WERT")],
@@ -207,7 +216,9 @@ i <- i + 1
 wells[i] <- well_number(dist)
 }
 
-plot(x = critDist,y = wells)
+plot(x = critDist,y = wells,
+     ylim = rev(range(wells)), 
+     xlab="Brunnenabstand [m]", ylab="Anzahl Brunnen",)
 }
 
 
