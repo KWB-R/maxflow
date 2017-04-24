@@ -87,7 +87,7 @@ def set_layerbottom(botm_north,
 
 botm = set_layerbottom(botm_north = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], 
                                              dtype=np.float32), 
-                       gradient_northSouth = 65/Ly #0.012037037037037037  
+                       gradient_northSouth = 50/Ly #0.012037037037037037  
                        )
 
 #botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
@@ -902,7 +902,7 @@ if 'mnw2' in locals():
                  markeredgecolor='black', 
                  markerfacecolor='black', 
                  zorder=9)
-plt.savefig('Gleichen_Restwasser_6D.png', dpi=300, bbox_inches='tight')
+#plt.savefig('Gleichen_Restwasser_6D.png', dpi=300, bbox_inches='tight')
 plt.show()
 ###Plot the head versus time
 
@@ -943,7 +943,7 @@ plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
 plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([1500, 4500, 0, 180])
-plt.savefig('time_series_north.png', dpi=300, bbox_inches='tight')
+#plt.savefig('time_series_north.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ### Import measured observation point 2
@@ -981,7 +981,7 @@ plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
 plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([1500, 4500, 0, 180])
-plt.savefig('time_series_east.png', dpi=300, bbox_inches='tight')
+#plt.savefig('time_series_east.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ### Import measured observation point 3
@@ -1018,7 +1018,7 @@ plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
 plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([1500, 4500, 0, 180])
-plt.savefig('time_series_centre.png', dpi=300, bbox_inches='tight')
+#plt.savefig('time_series_centre.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 #### Import measured observation point 4
@@ -1094,7 +1094,7 @@ plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
 plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([1500, 4500, 0, 180])
-plt.savefig('time_series_west.png', dpi=300, bbox_inches='tight')
+#plt.savefig('time_series_west.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ### Import measured observation point 6
@@ -1119,7 +1119,7 @@ idx_bot = dis.botm.array[:, int(idx6[1]), int(idx6[2])]
 ts = headobj.get_ts(idx6)
 ts_1 = headobj.get_ts(idx6_1)
 plt.subplot(1, 1, 1)
-ttl = 'Wasserstand im Modellpunkt x = 3900 m and y = 5230 m'.format(obsPoint_805722[0] + 1, obsPoint_805722[1], obsPoint_805722[2])
+ttl = 'Wasserstand im Modellpunkt x = {1} m and y = {2} m'.format(obsPoint_805722[0] + 1, int(obsPoint_805722[1]), int(Ly-obsPoint_805722[2]))
 plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
@@ -1127,11 +1127,15 @@ plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
 plt.plot(obs_measured_805722[:, 0], obs_measured_805722[:, 1] + botm[nlay-1,int(idx6[1]),int(idx6[2])], ls=':', label='Pegel 6B (805722)')
 plt.plot(obs_measured_805721[:, 0], obs_measured_805721[:, 1] + botm[nlay-1,int(idx6_1[1]),int(idx6_1[2])], color="red", ls=':', label='Pegel 6D (805721)')
-plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
-plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
-plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
+#plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+#plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+#plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
+#plt.axhspan(ymin=idx_bot[0], ymax=180, color='beige', label='6D')
+plt.axhspan(ymin=idx_bot[1], ymax=idx_bot[0], color='lightgrey', label='6C')
+plt.axhspan(ymin=idx_bot[2], ymax=idx_bot[1], color='bisque', label='6B')
+#plt.axhline(y=idx_bot[2], color='black', linestyle='-', label='Basis 6B')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-plt.axis([1500, 4500, 0, 180])
+plt.axis([1500, 4500, idx_bot[2], idx_bot[0]])
 plt.savefig('time_series_southwest.png', dpi=300, bbox_inches='tight')
 plt.show()
 
@@ -1157,7 +1161,7 @@ idx_bot = dis.botm.array[:, int(idx5[1]), int(idx5[2])]
 ts = headobj.get_ts(idx5)
 #ts_1 = headobj.get_ts(idx5_1)
 plt.subplot(1, 1, 1)
-ttl = 'Wasserstand im Modellpunkt x = 3900 m and y = 5230 m'.format(obsPoint_813762[0] + 1, obsPoint_813762[1], obsPoint_813762[2])
+ttl = 'Wasserstand im Modellpunkt x = {1} m and y = {2} m'.format(obsPoint_813762[0] + 1, int(obsPoint_813762[1]), int(Ly-obsPoint_813762[2]))
 plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
@@ -1187,18 +1191,22 @@ idx = (obsPoint_504943[0],
 idx_bot = dis.botm.array[:, int(idx[1]), int(idx[2])]
 ts = headobj.get_ts(idx)
 plt.subplot(1, 1, 1)
-ttl = 'Wasserstand im Modellpunkt x = 3900 m and y = 5230 m'.format(obsPoint_504943[0] + 1, obsPoint_504943[1], obsPoint_504943[2])
+ttl = 'Wasserstand im Modellpunkt x = {1} m and y = {2} m'.format(int(obsPoint_504943[0]) + 1, int(obsPoint_504943[1]), int(Ly-obsPoint_504943[2]))
 plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(obs_target_504943[:, 0], obs_target_504943[:, 1] + botm[nlay-1,int(idx5[1]),int(idx5[2])], ls=':', label='Pegel 6B (504943)')
-plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
-plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
-plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
+#plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
+#plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
+#plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
+#plt.axhspan(ymin=idx_bot[0], ymax=180, color='beige', label='6D')
+plt.axhspan(ymin=idx_bot[1], ymax=idx_bot[0], color='lightgrey', label='6C')
+plt.axhspan(ymin=idx_bot[2], ymax=idx_bot[1], color='bisque', label='6B')
+#plt.axhline(y=idx_bot[2], color='black', linestyle='-', label='Basis 6B')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-plt.axis([1500, 4500, 0, 180])
-#plt.savefig('time_series_west.png', dpi=300, bbox_inches='tight')
+plt.axis([1500, 4500, idx_bot[2], idx_bot[0]])
+plt.savefig('Zielinie_504943', dpi=300, bbox_inches='tight')
 plt.show()
 
 ### Import Ziellinie 2
@@ -1215,7 +1223,7 @@ idx = (obsPoint_504952[0],
 idx_bot = dis.botm.array[:, int(idx[1]), int(idx[2])]
 ts = headobj.get_ts(idx)
 plt.subplot(1, 1, 1)
-ttl = 'Wasserstand im Modellpunkt x = 3200 m and y = 4000 m'#.format(obsPoint_504952[0] + 1, obsPoint_504952[1], obsPoint_504943[2])
+ttl = 'Wasserstand im Modellpunkt x = {1} m and y = {2} m'.format(int(obsPoint_504952[0]) + 1, int(obsPoint_504952[1]), int(Ly-obsPoint_504952[2]))
 plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
@@ -1223,13 +1231,13 @@ plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(obs_target_504952[:, 0], obs_target_504952[:, 1] + botm[nlay-1,int(idx5[1]),int(idx5[2])], ls=':', label='Pegel 6B (504952)')
 #plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
 #plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
-plt.axhline(y=idx_bot[2], color='black', linestyle='-', label='Basis 6B')
+#plt.axhspan(ymin=idx_bot[0], ymax=180, color='beige', label='6D')
 plt.axhspan(ymin=idx_bot[1], ymax=idx_bot[0], color='lightgrey', label='6C')
 plt.axhspan(ymin=idx_bot[2], ymax=idx_bot[1], color='bisque', label='6B')
-plt.axhspan(ymin=idx_bot[0], ymax=180, color='beige', label='6D')
+#plt.axhline(y=idx_bot[2], color='black', linestyle='-', label='Basis 6B')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-plt.axis([1500, 4500, 0, 180])
-#plt.savefig('time_series_west.png', dpi=300, bbox_inches='tight')
+plt.axis([1500, 4500, idx_bot[2], idx_bot[0]])
+plt.savefig('Zielinie_504952.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ###budget graphs
