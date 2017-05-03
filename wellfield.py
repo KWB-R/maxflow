@@ -115,7 +115,7 @@ ibound[0, :, 0] = -1
 #ibound[0:2, -1, 0:15] = -1
 #starting heads
 head_north = np.array([160, 160, 115], dtype=np.float32)
-head_gradient_northSouth = -35/5400
+head_gradient_northSouth = 0#-5/5400
 
 #iniHead= 110
 #strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
@@ -975,7 +975,7 @@ plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
 plt.plot(ts_1[:, 0], ts_1[:, 1], color="red", label='Modell 6D')
 plt.plot(obs_measured_503372[:, 0], obs_measured_503372[:, 1] + botm[nlay-1,int(idx2[1]),int(idx2[2])], ls=':', label='Pegel 6B (503372)')
-plt.plot(obs_measured_503371[:, 0], obs_measured_503371[:, 1] + botm[nlay-1,int(idx1_1[1]),int(idx1_1[2])], color="red", ls=':', label='Pegel 6D (503371)')
+plt.plot(obs_measured_503371[:, 0], obs_measured_503371[:, 1] + botm[nlay-1,int(idx2_1[1]),int(idx2_1[2])], color="red", ls=':', label='Pegel 6D (503371)')
 plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
 plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
 plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
@@ -1196,7 +1196,7 @@ plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
-plt.plot(obs_target_504943[:, 0], obs_target_504943[:, 1] + botm[nlay-1,int(idx5[1]),int(idx5[2])], ls=':', label='Pegel 6B (504943)')
+plt.plot(obs_target_504943[:, 0], obs_target_504943[:, 1] + botm[nlay-1,int(idx[1]),int(idx[2])], ls=':', label='Pegel 6B (504943)')
 #plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
 #plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
 #plt.axhline(y=idx_bot[2], color='grey', linestyle='-')
@@ -1228,7 +1228,7 @@ plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
-plt.plot(obs_target_504952[:, 0], obs_target_504952[:, 1] + botm[nlay-1,int(idx5[1]),int(idx5[2])], ls=':', label='Pegel 6B (504952)')
+plt.plot(obs_target_504952[:, 0], obs_target_504952[:, 1] + botm[nlay-1,int(idx[1]),int(idx[2])], ls=':', label='Pegel 6B (504952)')
 #plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
 #plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
 #plt.axhspan(ymin=idx_bot[0], ymax=180, color='beige', label='6D')
