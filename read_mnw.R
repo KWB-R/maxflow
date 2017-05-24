@@ -9,7 +9,7 @@ if(!require("gganimate")) {
 }
 library(gganimate)
 
-setwd("C:/Users/cmenz/Desktop/WC_Maxflow/branches/combined_leakage")
+setwd("C:/Users/RE73858/Desktop/WC_Maxflow/Maxflow-combined_leakage")
 
 well_master <- read.csv(file = "wells_nodes.csv",header = TRUE) %>% 
                dplyr::filter(k == 2) %>% 
@@ -22,7 +22,8 @@ wells <- data.table::fread(input = "wellfield.byn", fill = TRUE)
 
 names(wells) <- c("WELLID", "NODE", "Lay", "Row", "Col", "Totim", "Q_node", "hwell", "hcell", "seepage")
 
-wells <- wells[,c("NODE", "Lay", "Row", "Col") := NULL]
+# wells <- wells[,c("NODE", "Lay", "Row", "Col") := NULL]
+wells <- wells[,c("NODE", "Lay") := NULL]
 
 save(wells, file = "wells.RData")
 
@@ -48,8 +49,13 @@ entnahme_pro_jahr <-wells_perYear %>%
                          round((Gesamtfoerderung*24*60*365)/1000000,1)))
 
 wells_perYear <- wells_perYear %>% 
-                 dplyr::left_join(y = entnahme_pro_jahr)
-
+                 dplyr::left_join(y = entnahme_pro_jahr) %>% 
+                  dplyr::filter(X_WERT >= 2529190,
+                                X_WERT <=	2530190,
+                                Y_WERT <=	5658790,
+                                Y_WERT >=	5657790,
+                                Totim >=9)
+                   
 #animation
 p <- ggplot(wells_perYear, aes(x=X_WERT, 
                                y=Y_WERT, 
@@ -66,11 +72,11 @@ gganimate(p, "entnahme.html",
           ani.width = 1000, 
           ani.height =1080)
 
-plot(Q_perYear ~ Year, 
-     data=entnahme_pro_jahr, 
-     type="b", 
-     col="blue", 
-     las = 1)
+#plot(Q_perYear ~ Year, 
+#     data=entnahme_pro_jahr, 
+#     type="b", 
+#     col="blue", 
+#     las = 1)
 
 write.csv(wells_perYear, 
           "wells_Qperyear.csv",
@@ -85,48 +91,48 @@ write.csv(wells_perYear,
 #                    hcell_median = median(hcell))
 
 
-wells_summary <- wells_perDay %>% 
-  ungroup() %>% 
-  group_by(WELLID) %>%  
-  filter(Q_node_median < 0) %>%
-  summarise(Q_node_median = -median(Q_node_median), 
-            days_active = n()) %>% 
-  arrange(Q_node_median, desc(days_active))
-
-wells_summary %>%  
-  ggplot(aes(x = days_active, y = Q_node_median/24/60)) + 
-  geom_point(alpha = 0.5, size = 2) + 
-  labs(y = "Foerderrate pro Minute (m³/min)") +
-  theme_bw()
-
-# Q sum per well for whole simulation
-wells_perDay %>% 
-  ungroup() %>% 
-  mutate(WELLID = as.numeric(gsub("WELL", "", .$WELLID))) %>%  
-  group_by(WELLID) %>% 
-  summarise(Qsum = -sum(Q_node_median)) %>%  
-  plot(Qsum ~ WELLID, data = ., type="b", col="blue")
-
-
-wells_perDay_tidy <- tidyr::gather(data = wells_perDay,Key, Value, -Totim, -WELLID)
-
-pdf("wells_Q.pdf",height = 7, width = 10)
-xyplot(Q_node_median ~ Totim | WELLID,
-       data = wells_perDay,
-       layout = c(1,1))
-dev.off()
-
-pdf("wellfield_Q.pdf",height = 7, width = 10)
-xyplot(Q_node_median ~ Totim, group = WELLID,
-       data = wells_perDay)
-dev.off()
-
-pdf("wells_H.pdf",height = 7, width = 10)
-xyplot(Value ~ Totim | WELLID,
-       group = Key,
-data = wells_perDay_tidy %>% filter(Key !="Q_node_median"),
-layout = c(1,1))
-dev.off()
+# wells_summary <- wells_perDay %>% 
+#   ungroup() %>% 
+#   group_by(WELLID) %>%  
+#   filter(Q_node_median < 0) %>%
+#   summarise(Q_node_median = -median(Q_node_median), 
+#             days_active = n()) %>% 
+#   arrange(Q_node_median, desc(days_active))
+# 
+# wells_summary %>%  
+#   ggplot(aes(x = days_active, y = Q_node_median/24/60)) + 
+#   geom_point(alpha = 0.5, size = 2) + 
+#   labs(y = "Foerderrate pro Minute (m³/min)") +
+#   theme_bw()
+# 
+# # Q sum per well for whole simulation
+# wells_perDay %>% 
+#   ungroup() %>% 
+#   mutate(WELLID = as.numeric(gsub("WELL", "", .$WELLID))) %>%  
+#   group_by(WELLID) %>% 
+#   summarise(Qsum = -sum(Q_node_median)) %>%  
+#   plot(Qsum ~ WELLID, data = ., type="b", col="blue")
+# 
+# 
+# wells_perDay_tidy <- tidyr::gather(data = wells_perDay,Key, Value, -Totim, -WELLID)
+# 
+# pdf("wells_Q.pdf",height = 7, width = 10)
+# xyplot(Q_node_median ~ Totim | WELLID,
+#        data = wells_perDay,
+#        layout = c(1,1))
+# dev.off()
+# 
+# pdf("wellfield_Q.pdf",height = 7, width = 10)
+# xyplot(Q_node_median ~ Totim, group = WELLID,
+#        data = wells_perDay)
+# dev.off()
+# 
+# pdf("wells_H.pdf",height = 7, width = 10)
+# xyplot(Value ~ Totim | WELLID,
+#        group = Key,
+# data = wells_perDay_tidy %>% filter(Key !="Q_node_median"),
+# layout = c(1,1))
+# dev.off()
 
 # if (FALSE) {
 # ggplot(wells_perDay, aes(x = Totim, y = Q_node_median)) +
