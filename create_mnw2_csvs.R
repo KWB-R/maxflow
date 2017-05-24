@@ -1,7 +1,7 @@
 library(dplyr)
 library(reshape2)
 
-setwd("C:/Users/RE73858/Desktop/WC_Maxflow/Maxflow-master")
+setwd("C:/Users/cmenz/Desktop/WC_Maxflow/trunk")
 
 ### Benoetigt, da MNW2 erwartet, dass Anzahl der Brunnen je Stressperiode = Gesamtbrunnenanzahl
 wells_time_dummy <- function(wells_nodes, pers = 0:11) {
@@ -143,18 +143,19 @@ altbrunnen_times <- altbrunnen %>%
                                    "qdes",
                                    "per", 
                                    "Year") %>% 
-                    left_join(altbrunnen_nodes %>% select(Brkenn,k,wellid)) %>% 
+                    left_join(altbrunnen_nodes %>% select(Brkenn,k,wellid, k)) %>% 
                     dplyr::select_("per", 
                                    "Year",
                                    "wellid",
                                    "Brkenn",
-                                   "qdes"
+                                   "qdes",
+                                   "k"
                                    )  
 
-altbrunnen_times <- rbind(altbrunnen_times,
-                          add_last_q(df_old_times = altbrunnen_times,
-                                     df_inOperation = altbrunnen,
-                                     max_per = 11))
+# altbrunnen_times <- rbind(altbrunnen_times,
+#                           add_last_q(df_old_times = altbrunnen_times,
+#                                      df_inOperation = altbrunnen,
+#                                      max_per = 11))
 
 ## Einlesen der Brunnen für Prognosezeitraum ##
 
@@ -195,7 +196,7 @@ if (FALSE) {
   i <- 0
   for (dist in critDist) {
     i <- i + 1 
-    wells[i] <- length(get_remaining_wells(df_nodes = neubrunnen_nodes %>% filter(k == 0),
+    wells[i] <- length(get_remaining_wells(df_nodes = neubrunnen_nodes %>% filter(k == 2),
                                            critDist = dist)$names)
   }
   
@@ -210,10 +211,10 @@ if (FALSE) {
 # (falls Parameter 'critDist' zu klein gewählt -> FEHLER, daher Abschätzung
 # zu sinnvollen Wertebereich mittels obigem Plot durchführen!!!!)
 
-critDist <- 150 ### hier ändern um Brunnenraster anzupassen!!!!!!!!!!
+critDist <- 140 ### hier ändern um Brunnenraster anzupassen!!!!!!!!!!
 
 neubrunnen_remaining <- get_remaining_wells(df_nodes = neubrunnen_nodes %>% 
-                                            filter(k == 0),
+                                            filter(k == 2),
                                             critDist = critDist)
 
 ## Nur zum Testen -> Entfernungsmatrix
@@ -222,30 +223,31 @@ neubrunnen_remaining <- get_remaining_wells(df_nodes = neubrunnen_nodes %>%
 
 ### Eliminieren von Neubrunnen die nicht 'critDist' Kriterium erfüllen
 neubrunnen_nodes <- neubrunnen_nodes %>%  
-                    filter(Brkenn %in% neubrunnen_remaining$names)
+                    filter(!Brkenn %in% neubrunnen_remaining$names)
 
 neubrunnen_times <- neubrunnen_times %>%  
-                    filter(Brkenn %in% neubrunnen_remaining$names)
+                    filter(!Brkenn %in% neubrunnen_remaining$names)
 ################################################################################
 ################################################################################
 ################################################################################
 
 neubrunnen_nodes <- neubrunnen_nodes %>% 
   dplyr::ungroup() %>% 
-  dplyr::mutate(wellid = sprintf("welll%d",
+  dplyr::mutate(wellid = sprintf("well%d",
                                  (nrow(altbrunnen_nodes) + 1):(nrow(altbrunnen_nodes) + n())))
 
-Q_mom <- 1.0  # Faktor für Förderrate der Neuanlagen aus GWL 6B im Prognosezeitraum
+Q_mom <- 0.5  # Faktor für Förderrate der Neuanlagen aus GWL 6B im Prognosezeitraum
 
 neubrunnen_times <- neubrunnen_times %>% 
                     dplyr::mutate(qdes = Qbr*24*60*Q_mom,  
                                   per = Year - 2007) %>% 
-                    dplyr::left_join(neubrunnen_nodes %>% select(Brkenn, wellid)) %>% 
+                    dplyr::left_join(neubrunnen_nodes %>% select(Brkenn, wellid, k)) %>% 
                       dplyr::select_("per", 
                                      "Year",
                                      "wellid",
                                      "Brkenn",
-                                     "qdes"
+                                     "qdes",
+                                     "k"
                       )  
 ## Erstellung der modflow input datei well_nodes ##
 
@@ -271,7 +273,7 @@ wells_times <- wells_time_dummy(wells_nodes,pers = 0:max_per) %>%
               left_join(wells_times, by = c("per", "wellid", "Brkenn")) %>% 
               mutate(qdes = ifelse(is.na(qdes.y), qdes.x, qdes.y), 
                      Year = per + 2007) %>% 
-              select(per, Year, wellid, Brkenn, qdes) 
+              select(per, Year, wellid, Brkenn, qdes, k) 
 
 #wells_times %>% group_by(wellid,per) %>% summarise(n = n()) %>% filter(n > 1) %>% View()
 
