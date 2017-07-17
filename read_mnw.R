@@ -4,12 +4,22 @@ library(ggplot2)
 library(lattice)
 library(ggplot2)
 library(devtools)
+library(foreign)
 if(!require("gganimate")) { 
   devtools::install_github("dgrtwo/gganimate", dependencies = TRUE)
 }
 library(gganimate)
 
 setwd("C:/Users/RE73858/Desktop/WC_Maxflow/Maxflow-combined_leakage")
+
+head_master <- read.dbf(file = "test_heads_sp12.dbf", as.is = FALSE) %>%
+               dplyr::filter(row >=68*2,
+                             row <=88*2,
+                             column >=40*2,
+                             column <=60*2)
+
+mean_zonehead <-  head_master %>%
+  summarise(Wasserstand = mean(head002))
 
 well_master <- read.csv(file = "wells_nodes.csv",header = TRUE) %>% 
                dplyr::filter(k == 2) %>% 
@@ -55,7 +65,12 @@ wells_perYear <- wells_perYear %>%
                                 Y_WERT <=	5658790,
                                 Y_WERT >=	5657790,
                                 Totim >=9)
-                   
+
+entnahme_prognose <- wells_perYear %>%
+  ungroup() %>%
+  group_by(Totim) %>% 
+  summarise(Gesamtfoerderung = sum(Q_node_cubicmpermin))
+
 #animation
 p <- ggplot(wells_perYear, aes(x=X_WERT, 
                                y=Y_WERT, 
@@ -80,6 +95,18 @@ gganimate(p, "entnahme.html",
 
 write.csv(wells_perYear, 
           "wells_Qperyear.csv",
+          row.names = FALSE)
+
+write.csv(head_master, 
+          "zonehead_L2_2018.csv",
+          row.names = FALSE)
+
+write.csv(mean_zonehead, 
+          "mean_head_end.csv",
+          row.names = FALSE)
+
+write.csv(entnahme_prognose, 
+          "total_Qperyear.csv",
           row.names = FALSE)
 
 # wells_perDay <- wells %>% 
