@@ -20,9 +20,9 @@ upleft_coord = calc_model_wellcoordinates(Ly = Ly,
 
 xul = upleft_coord['xul']
 yul = upleft_coord['yul']
-#xul = 2527190
-#yul = 5662190
 
+#xul = 2528190
+#yul = 5662180
 
 proj4_str = 'ESPG:31466'
 
@@ -38,7 +38,6 @@ nrow = int(Ly / delr)
 ncol = int(Lx / delc)
 start_datetime = '1/1/2007'
 xoff = 1000
-
 
 ##observation wells
 #81419
@@ -69,6 +68,7 @@ ykoord_50261=  5659857
 xkoord_50244= 2532335
 ykoord_50244= 5656874
 
+
 ###layer decline
 def set_layerbottom(botm_north, 
                     gradient_northSouth
@@ -87,7 +87,7 @@ def set_layerbottom(botm_north,
 
 botm = set_layerbottom(botm_north = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], 
                                              dtype=np.float32), 
-                       gradient_northSouth = 50/Ly #0.012037037037037037  
+                       gradient_northSouth = 65/Ly #0.012037037037037037  
                        )
 
 #botm = np.array([ztop - delv[0],ztop - sum(delv[0:2]), zbot], dtype=np.float32)
@@ -97,7 +97,7 @@ hk = np.array([2e-5*3600*24, 5e-10*3600*24, 6e-5*3600*24], #horizontal conductiv
               dtype=np.float32)
 vka =  np.array([2e-5*3600*24, 5e-10*3600*24, 6e-5*3600*24], #vertical conductivity
                 dtype=np.float32)
-sy = np.array([0.123, 0.023, 0.16], #specific yield
+sy = np.array([0.123, 0.023, 0.15], #specific yield
               dtype=np.float32)
 ss = np.array([1.e-4, 1.e-4, 1.e-4], #specific storage
               dtype=np.float32)
@@ -115,7 +115,7 @@ ibound[0, :, 0] = -1
 #ibound[0:2, -1, 0:15] = -1
 #starting heads
 head_north = np.array([160, 160, 115], dtype=np.float32)
-head_gradient_northSouth = 0#-5/5400
+head_gradient_northSouth = 0 #-35/5400
 
 #iniHead= 110
 #strt = iniHead * np.ones((nlay, nrow, ncol), dtype=np.float32)
@@ -445,6 +445,9 @@ headobj = bf.HeadFile(modelname+'.hds')
 times = headobj.get_times()
 cbb = bf.CellBudgetFile(modelname+'.cbc')
 
+### Save head file to shape
+headobj.to_shapefile('test_heads_sp12.shp', totim=times[-1], mflay=2, attrib_name='head')
+
 ### Get layer based budget for each time step
 layer_budget = get_layerbudget("wellfield", 
                                nper, 
@@ -510,7 +513,7 @@ plt.bar(layer3_budget_perStressPeriod['stress_period'] + bar_width,
         bottom=layer3_budget_perStressPeriod['CONSTANT_HEAD_IN'] + layer3_budget_perStressPeriod['STORAGE_IN'])
 plt.legend(bbox_to_anchor=(1.2, 0.9), bbox_transform=plt.gcf().transFigure)
 plt.title('Entnahme aus 6B (in m3 pro Stressperiode)')
-plt.axis([0, 9, 0, 1.8e7])
+plt.axis([0, 12, 0, 1.8e7])
 plt.ylabel('m3')
 plt.xlabel('Stressperiode')
 plt.xticks(layer3_budget_perStressPeriod['stress_period'])
@@ -1210,7 +1213,11 @@ plt.savefig('Zielinie_504943', dpi=300, bbox_inches='tight')
 plt.show()
 
 ### Import Ziellinie 2
-obs_target_504952  = np.loadtxt('obs_head_time_504952.csv', 
+obs_target_504952  = np.loadtxt('target_head_time_504952.csv', 
+                           delimiter=",",
+                           skiprows = 1)
+### Import Pegel
+obs_measured_504952  = np.loadtxt('obs_head_time_504952.csv', 
                            delimiter=",",
                            skiprows = 1)
 ## User defined observation point in format: layer, x, y-coordinate (absolute)
@@ -1228,7 +1235,8 @@ plt.title(ttl)
 plt.xlabel('Zeit in Tagen')
 plt.ylabel('Wasserstand in m')
 plt.plot(ts[:, 0], ts[:, 1], color="blue", label='Modell 6B')
-plt.plot(obs_target_504952[:, 0], obs_target_504952[:, 1] + botm[nlay-1,int(idx[1]),int(idx[2])], ls=':', label='Pegel 6B (504952)')
+plt.plot(obs_target_504952[:, 0], obs_target_504952[:, 1] + botm[nlay-1,int(idx[1]),int(idx[2])], ls=':', color="blue", label='Ziellinie 6B (504952)')
+plt.plot(obs_measured_504952[:, 0], obs_measured_504952[:, 1] + botm[nlay-1,int(idx[1]),int(idx[2])], ls=':', color="red",label='Pegel 6B (504952)')
 #plt.axhline(y=idx_bot[0], color='grey', linestyle='-')
 #plt.axhline(y=idx_bot[1], color='grey', linestyle='-')
 #plt.axhspan(ymin=idx_bot[0], ymax=180, color='beige', label='6D')
@@ -1237,7 +1245,7 @@ plt.axhspan(ymin=idx_bot[2], ymax=idx_bot[1], color='bisque', label='6B')
 #plt.axhline(y=idx_bot[2], color='black', linestyle='-', label='Basis 6B')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.axis([1500, 4500, idx_bot[2], idx_bot[0]])
-plt.savefig('Zielinie_504952.png', dpi=300, bbox_inches='tight')
+plt.savefig('Zielinie_504952.png', dpi=300, bbox_inches='tight',transparent=True)
 plt.show()
 
 ###budget graphs
@@ -1326,4 +1334,8 @@ plt.axis([0, 5400, 0, 200])
 plt.savefig('ysect.png', dpi=300, bbox_inches='tight')
 plt.show()
 #t = ax.set_title('Column 6 Cross-Section - Model Grid')
-    
+
+
+
+#alldata = headobj.get_alldata()
+#headobj.list_records()
