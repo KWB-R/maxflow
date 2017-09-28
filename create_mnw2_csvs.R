@@ -1,17 +1,24 @@
+library(shapefiles)
 library(dplyr)
-library(reshape2)
+library(readr)
+library(tidyr)
 
-setwd("C:/Users/cmenz/Desktop/WC_Maxflow/trunk")
+
+#setwd("C:/Users/mrustl/Desktop/WC_Maxflow/trunk")
+
+### L_x und L_y: muessen mit Parametern Ly und Lx in wellfield.py uebereinstimmen 
+L_x <- 4000
+L_y <- 5400
 
 ### Benoetigt, da MNW2 erwartet, dass Anzahl der Brunnen je Stressperiode = Gesamtbrunnenanzahl
-wells_time_dummy <- function(wells_nodes, pers = 0:11) {
+wells_time_dummy <- function (wells_nodes, pers = 0:9) {
   
   for (myPeriod in pers) {
     tmp <- wells_nodes %>% 
       mutate_(per = ~myPeriod,
               qdes = 0) %>%
-      select_(~per,~wellid, ~Brkenn, ~qdes) 
-    if (myPeriod == pers[1]) {
+      select_(~per,~wellid, ~qdes) 
+    if(myPeriod == pers[1]) {
       res <- tmp
     } else {
       res <- rbind(res,tmp)
@@ -21,264 +28,137 @@ wells_time_dummy <- function(wells_nodes, pers = 0:11) {
   return(res)  
 }
 
-## Auffüllen des Prognosezeitraums mit Förderraten aus dem letzten Jahr der Kalibrierung 
-add_last_q <- function(df_old_times, # altbrunnen_times 
-                       df_inOperation, #altbrunnen
-                       max_per = 11) {
+rwe_model <- TRUE ### if FALSE wabis data will be used for MNW2
+export_wellpackage <- FALSE
+
+### Using data from RWE model
+if (rwe_model == TRUE) {
+  stauer <- shapefiles::read.dbf(dbf.name = "GIS/Stauer.dbf")$dbf
+  entnahme <- shapefiles::read.dbf(dbf.name = "GIS/W_Brunnen_bis2015.dbf")$dbf
+  
+  
+  entnahme_pro_jahr_und_brunnen <- entnahme %>% 
+    select(Iz, Qbr, Brgwl, Brkenn, X_WERT, Y_WERT) %>% 
+    mutate(Year = Iz + 1970, 
+           daysPerYear = lubridate::yday(as.Date(sprintf("%s-12-31", Year, format="%Y-%m-%d"))),
+           Q_perYear = Qbr*60*24*daysPerYear, 
+           Randbrunnen = stringr::str_detect(string = entnahme$Brkenn,pattern = "T  WR|T  WS"), 
+           Bru_in_6B = stringr::str_detect(string = entnahme$Brgwl,"xx0.*")) %>%  
+    filter(Bru_in_6B == TRUE, 
+           Randbrunnen == FALSE,
+           X_WERT < 2532000,
+           X_WERT >= 2528500,
+           Y_WERT < 5662600,
+           Y_WERT >= 5656900, 
+           Year >= 2007) %>% 
+    group_by(Brkenn, X_WERT, Y_WERT,Year) %>%  
+    summarise(Q_perYear=-sum(Q_perYear)) 
+  
+  
+  entnahme_pro_jahr <- entnahme_pro_jahr_und_brunnen %>% 
+    ungroup() %>% 
+    group_by(Year) %>% 
+    summarise(Gesamtfoerderung = sum(Q_perYear)) %>% 
+    mutate(label = sprintf("Jahr: %d (Gesamtf\u00F6rderung 6B & 6D: %3.1f Millionen m3)", 
+                           Year, 
+                           round(Gesamtfoerderung/1000000,1)))
+  
+  
+  entnahme_pro_jahr_und_brunnen <- entnahme_pro_jahr_und_brunnen %>% 
+    left_join(entnahme_pro_jahr)
+  
+  entnahme_pro_jahr_und_brunnen %>%  ungroup() %>% group_by(Year) %>%  summarise(n = n())
   
   
   
-    last_q <- df_old_times %>% 
-              dplyr::filter(per == max(per)) 
+  wells_nodes <- entnahme_pro_jahr_und_brunnen %>% 
+    ungroup() %>% 
+    select(Brkenn, X_WERT, Y_WERT) %>% 
+    group_by(Brkenn) %>% 
+    summarise(X_WERT = min(X_WERT),
+              Y_WERT = min(Y_WERT)) %>% 
+    mutate(wellid = sprintf("well%d", 1:n()), 
+           y = Y_WERT - min(Y_WERT), 
+           x = X_WERT - min(X_WERT), 
+           k = 2,
+           losstype = "thiem",
+           pumploc = 0,
+           qlimit = 0,
+           ppflag = 0,
+           pumpcap = 0,
+           rw = 0.5,
+           hlim = 6,
+           qcut = 0)
   
+  wells_nodes <- wells_nodes %>% 
+    mutate(x = x + (L_x - max(x)) - 200, ### 200 m Abstand vom rechten Rand
+           y = max(y)-y + (L_y - max(y))/2) ### gleicher  Abstand von oberer/unterer Rand
   
-  max_per_old <- max(df_old_times$per)
-  
-  new_pers <- (max_per_old + 1):max_per
-  
-  for (ind in seq_along(new_pers)) {
-    tmp <- last_q %>% 
-      dplyr::mutate(per = new_pers[ind],
-                    Year = 2007 + per) %>% 
-      dplyr::select_("per", 
-                     "Year",
-                     "wellid",
-                     "Brkenn",
-                     "qdes")
-    
-    if (ind == 1) {
-      res <- tmp
-    } else {
-      res <- rbind(res,tmp)
-    }
-  }
-  
-  
-  in_operation <- df_inOperation %>% dplyr::select_("Brkenn", 
-                                                    "endtime")    
-  
-  for (brkenn in unique(res$Brkenn)) {
-    
-    endtime <- max(in_operation$endtime[in_operation$Brkenn == brkenn])
-    
-    rows_to_drop <-  res$per > endtime & res$Brkenn == brkenn   
-    res <-  res[!rows_to_drop,]
-  } 
-  
-  
-  return(res)
+wells_times <- entnahme_pro_jahr_und_brunnen %>% 
+  left_join(wells_nodes %>% select(Brkenn, wellid)) %>% 
+  mutate(per = 1+Year-min(entnahme_pro_jahr_und_brunnen$Year), 
+         qdes = -Q_perYear/365) %>%  
+  ungroup() %>% 
+  select(per,wellid, qdes) %>% 
+  arrange(per, wellid)
+
+
+
+
+wells_times <- wells_time_dummy(wells_nodes) %>% 
+               left_join(wells_times, by = c("per", "wellid")) %>% 
+               mutate(qdes = ifelse(is.na(qdes.y), qdes.x, qdes.y)) %>% 
+               mutate(qdes = ifelse(qdes != 0 , -1500, 0)) %>%  
+               select(per, wellid, qdes) 
+} else {
+#### Using data from RWE WABIS system
+wells_times <- read_csv("real_well_times.csv") %>% 
+  dplyr::rename(Brkenn = Brunnen) %>%
+  tidyr::gather(key = "year", value = "qdes", -Brkenn, -X_WERT, -Y_WERT) %>% 
+  dplyr::mutate(per = as.numeric(year) - 2006, 
+                qdes =  -qdes*60*24) %>% 
+  dplyr::filter(qdes < 0, 
+                X_WERT < 2532000,
+                X_WERT >= 2528500,
+                Y_WERT < 5662600,
+                Y_WERT >= 5656900) 
+
+
+wells_nodes <- wells_times %>% 
+  group_by(Brkenn) %>% 
+  summarise(X_WERT = min(X_WERT), 
+            Y_WERT = min(Y_WERT)) %>% 
+  arrange(Brkenn) %>% 
+  mutate(wellid = sprintf("well%d", 1:n()), 
+         y = Y_WERT - min(Y_WERT), 
+         x = X_WERT - min(X_WERT), 
+         k = 2,
+         losstype = "thiem",
+         pumploc = 0,
+         qlimit = 0,
+         ppflag = 0,
+         pumpcap = 0,
+         rw = 0.5,
+         hlim = 6,
+         qcut = 0)
+
+wells_nodes <- wells_nodes %>% 
+  mutate(x = x + (L_x - max(x)) - 200, ### 200 m Abstand vom rechten Rand
+         y = max(y)-y + (L_y - max(y))/2) ### gleicher  Abstand von oberer/unterer Rand
+
+
+
+wells_times  <- wells_times %>% 
+  left_join(wells_nodes %>% select(Brkenn, wellid)) %>% 
+  select(per,wellid, qdes) %>% 
+  arrange(per, wellid)
+
+wells_times <- wells_time_dummy(wells_nodes) %>% 
+              left_join(wells_times, by = c("per", "wellid")) %>% 
+              mutate(qdes = ifelse(is.na(qdes.y), qdes.x, qdes.y)) %>%  
+              select(per, wellid, qdes) 
+
 }
-
-## Hilfsfunktion zur Ermittlung des Brunnenabstandes ##
-get_well_distances <- function(df_nodes,
-                               col_x = "X_WERT",
-                               col_y = "Y_WERT",
-                               col_labels = "Brkenn") {
-  
-  distanceMatrix <- round(dist(df_nodes[,c(col_x,col_y)],
-                               method = "euclidian", 
-                               upper = TRUE,
-                               diag = FALSE),
-                          1)
-  attr(distanceMatrix, "Labels") <- df_nodes[,col_labels] %>% unlist(use.names = FALSE)
-  
-  
-  dist <- melt(as.matrix(distanceMatrix), varnames = c("row", "col"))
-  dist$row <- as.character(dist$row)
-  dist$col <- as.character(dist$col)
-  
-  dist <- dist %>% 
-    dplyr::filter(value > 0) %>% 
-    dplyr::arrange(row, value) 
-  
-  return(dist)
-}
-
-## Vergrößern des Brunnenrasters (nur Brunnen deren Abstand > krit. Distanz ist!)
-get_remaining_wells <- function(df_nodes,
-                                critDist = 300) {
-  
-  well_distances <- get_well_distances(df_nodes = df_nodes)
-  
-  dist_df <- well_distances %>% 
-    dplyr::filter(value < critDist) %>% 
-    dplyr::arrange(row, value) 
-  
-  wells_to_remain <- unique(dist_df$row)
-  
-  if (length(wells_to_remain) == 0) {
-    msg <- sprintf("Fehler: keine Neubrunnen erfüllen das Kriterium: Entfernung <= %4.0f m.\n
-Bitte einen größeren Wert für Parameter 'critDist' in Funktion get_remaining_wells() wählen!", 
-                   critDist)
-    stop(msg)
-    }
-  return(list(names = wells_to_remain,
-              distanceMatrix = dist_df))
-}
-
-
-## Einlesen der Brunnen für Kalibrierungszeitraum ##
-
-altbrunnen <- read.csv("GIS/alleBrunnen_BIOS_2007-2015.csv",
-                       stringsAsFactors = FALSE) %>% 
-              dplyr::mutate(Year = 2007 + per)
-
-
-altbrunnen_nodes <- altbrunnen %>%  
-                    dplyr::select_("Brkenn", 
-                                   "X_WERT", 
-                                   "Y_WERT", 
-                                   "k") %>% 
-                    dplyr::group_by_("Brkenn", "k") %>% 
-                    dplyr::summarise(X_WERT = min(X_WERT),
-                                     Y_WERT = min(Y_WERT)) %>% 
-                    dplyr::ungroup() %>% 
-                    dplyr::mutate(wellid = sprintf("welll%d",1:n()))
-
-## Einlesen der Förderraten für Kalibrierungszeitraum ##
-
-altbrunnen_times <- altbrunnen %>% 
-                    dplyr::select_("Brkenn", 
-                                   "k",
-                                   "qdes",
-                                   "per", 
-                                   "Year") %>% 
-                    left_join(altbrunnen_nodes %>% select(Brkenn,k,wellid, k)) %>% 
-                    dplyr::select_("per", 
-                                   "Year",
-                                   "wellid",
-                                   "Brkenn",
-                                   "qdes",
-                                   "k"
-                                   )  
-
-# altbrunnen_times <- rbind(altbrunnen_times,
-#                           add_last_q(df_old_times = altbrunnen_times,
-#                                      df_inOperation = altbrunnen,
-#                                      max_per = 11))
-
-## Einlesen der Brunnen für Prognosezeitraum ##
-
-neubrunnen_nodes <- read.csv("GIS/alleBrunnen_2016-2018.csv", 
-                             stringsAsFactors = FALSE) %>% 
-  dplyr::select_("Brkenn", 
-                 "X_WERT", 
-                 "Y_WERT", 
-                 "k") %>% 
-  dplyr::group_by_("Brkenn", "k") %>% 
-  dplyr::summarise(X_WERT = min(X_WERT),
-                   Y_WERT = min(Y_WERT)) 
-
-
-## Einlesen der Förderraten für Prognoseszeitraum ##
-
-neubrunnen_times <- read.csv("GIS/alleBrunnen_Wabis_bis 2020.csv") %>%  
-  dplyr::mutate(Year = Iz + 1970) %>% 
-  dplyr::filter(Brkenn %in% unique(neubrunnen_nodes$Brkenn),
-                Year >= 2016,
-                Year <= 2018)
-
-
-neubrunnen_nodes <- neubrunnen_nodes %>% 
-  dplyr::filter(Brkenn %in% unique(neubrunnen_times$Brkenn))
-
-################################################################################
-## Vergrößern des Brunnenrasters##
-################################################################################
-
-#### Hilfs-Abbildung zur Bestimmung eines optimalen Wertes für 'critDist'  
-if (FALSE) {
-  
-  critDist <- seq(50,300,5)
-  
-  
-  wells <- vector()
-  i <- 0
-  for (dist in critDist) {
-    i <- i + 1 
-    wells[i] <- length(get_remaining_wells(df_nodes = neubrunnen_nodes %>% filter(k == 2),
-                                           critDist = dist)$names)
-  }
-  
-  plot(x = critDist,y = wells,
-       ylim = rev(range(wells)), 
-       xlab = "Brunnenabstand [m]", 
-       ylab = "Anzahl Brunnen",
-       las = 1)
-}
-
-# Berücksichtigt nur Brunnen deren Abstände > krit. Entfernung ist 
-# (falls Parameter 'critDist' zu klein gewählt -> FEHLER, daher Abschätzung
-# zu sinnvollen Wertebereich mittels obigem Plot durchführen!!!!)
-
-critDist <- 140 ### hier ändern um Brunnenraster anzupassen!!!!!!!!!!
-
-neubrunnen_remaining <- get_remaining_wells(df_nodes = neubrunnen_nodes %>% 
-                                            filter(k == 2),
-                                            critDist = critDist)
-
-## Nur zum Testen -> Entfernungsmatrix
-#neubrunnen_remaining$distanceMatrix
-
-
-### Eliminieren von Neubrunnen die nicht 'critDist' Kriterium erfüllen
-neubrunnen_nodes <- neubrunnen_nodes %>%  
-                    filter(!Brkenn %in% neubrunnen_remaining$names)
-
-neubrunnen_times <- neubrunnen_times %>%  
-                    filter(!Brkenn %in% neubrunnen_remaining$names)
-################################################################################
-################################################################################
-################################################################################
-
-neubrunnen_nodes <- neubrunnen_nodes %>% 
-  dplyr::ungroup() %>% 
-  dplyr::mutate(wellid = sprintf("well%d",
-                                 (nrow(altbrunnen_nodes) + 1):(nrow(altbrunnen_nodes) + n())))
-
-Q_mom <- 0.5  # Faktor für Förderrate der Neuanlagen aus GWL 6B im Prognosezeitraum
-
-neubrunnen_times <- neubrunnen_times %>% 
-                    dplyr::mutate(qdes = Qbr*24*60*Q_mom,  
-                                  per = Year - 2007) %>% 
-                    dplyr::left_join(neubrunnen_nodes %>% select(Brkenn, wellid, k)) %>% 
-                      dplyr::select_("per", 
-                                     "Year",
-                                     "wellid",
-                                     "Brkenn",
-                                     "qdes",
-                                     "k"
-                      )  
-## Erstellung der modflow input datei well_nodes ##
-
-wells_nodes <- rbind(altbrunnen_nodes,neubrunnen_nodes) %>% 
-               dplyr::mutate(losstype = "thiem",
-                            pumploc = 0,
-                            qlimit = 0,
-                            ppflag = 0,
-                            pumpcap = 0,
-                            rw = 0.5,
-                            hlim = 6,
-                            qcut = 0)
-
-## Erstellung der modflow input datei well_times ##
-
-wells_times <- rbind(altbrunnen_times,neubrunnen_times)
-
-max_per <- max(wells_times$per)
-
-
-
-wells_times <- wells_time_dummy(wells_nodes,pers = 0:max_per) %>% 
-              left_join(wells_times, by = c("per", "wellid", "Brkenn")) %>% 
-              mutate(qdes = ifelse(is.na(qdes.y), qdes.x, qdes.y), 
-                     Year = per + 2007) %>% 
-              select(per, Year, wellid, Brkenn, qdes, k) 
-
-#wells_times %>% group_by(wellid,per) %>% summarise(n = n()) %>% filter(n > 1) %>% View()
-
-
-
 
 ###############################
 ### Export files for MNW2 
@@ -291,3 +171,22 @@ write.csv(wells_times,
           "wells_times.csv",
           row.names = FALSE)
 
+
+###############################
+### Create files for well package 
+###############################
+if (export_wellpackage == TRUE) {
+wells_nodes %>%
+  mutate(k = 2, 
+         i = y, 
+         j = x) %>% 
+  select(wellid, k, i, j) %>%
+  left_join(wells_times %>% 
+              mutate(flux = qdes) %>% 
+              select(per, wellid, flux)) %>% 
+  filter(flux < 0) %>% 
+  arrange(per, wellid) %>% 
+  select(per, k, i, j, flux) %>% 
+  write.csv("wellpackage.csv",
+            row.names = FALSE)
+}
